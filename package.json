@@ -1,7 +1,12 @@
 {
   "private": true,
+  "scripts": {
+    "tsx": "tsx",
+    "tsc": "tsc"
+  },
   "devDependencies": {
     "@types/node": "^20.14.9",
+    "tsx": "^4.16.2",
     "typescript": "^5.5.3"
   }
 }

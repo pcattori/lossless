@@ -1,6 +1,7 @@
 {
   "private": true,
   "scripts": {
+    "typecheck": "tsx src/typecheck.ts",
     "tsx": "tsx",
     "tsc": "tsc"
   },

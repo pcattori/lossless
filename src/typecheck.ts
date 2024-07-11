@@ -42,13 +42,6 @@ function augmentFooFile(content: string, fileName: string): string {
   findDefaultExportIndices(sourceFile);
 
   if (startIndex !== undefined && endIndex !== undefined) {
-    console.log(`Default export expression found in ${fileName}:`);
-    console.log(`Start index: ${startIndex}`);
-    console.log(`End index: ${endIndex}`);
-    console.log(
-      `Original expression: "${content.slice(startIndex, endIndex)}"`,
-    );
-
     const beforeExpr = content.slice(0, startIndex);
     const expr = content.slice(startIndex, endIndex);
     const afterExpr = content.slice(endIndex);

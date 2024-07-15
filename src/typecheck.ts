@@ -98,7 +98,8 @@ function addTypesToRoute(
         return type
       })
       .join("; ")
-    const Params = `{ [key: string]: string | undefined; ${paramEntries} }`
+    // const Params = `{ [key: string]: string | undefined; ${paramEntries} }`
+    const Params = `{ ${paramEntries} }`
 
     const newContent = `${beforeExpr}(${expr}) satisfies (arg: { params: ${Params} }) => string${afterExpr}`
     return newContent

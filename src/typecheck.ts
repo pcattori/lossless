@@ -1,6 +1,9 @@
 import ts from "typescript"
 import * as path from "path"
 
+let { default: routes } = await import("../example/routes")
+console.log({ routes })
+
 function createProgram(
   rootFiles: string[],
   options: ts.CompilerOptions,

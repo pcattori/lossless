@@ -11,34 +11,17 @@ type Route = {
   file: string
 }
 
-const ROUTES = new Map<string, Record<string, boolean>>()
 let routes: Route[] = (await import(path.join(EXAMPLE_DIR, "routes.ts")))
   .default
-for (let route of routes) {
-  let params = Object.fromEntries(
-    route.path
-      .split("/")
-      .filter((segment) => segment.startsWith(":"))
-      .map((segment) => {
-        segment = segment.slice(1) // trim `:`
+const ROUTES = new Set<string>(routes.map((r) => r.file))
 
-        let optional = segment.endsWith("?")
-        segment = optional ? segment.slice(0, -1) : segment // trim `?`
-
-        return [segment, optional] as const
-      }),
-  )
-  ROUTES.set(route.file, params)
-}
-
-function getRoute(fileName: string) {
+function isRoute(fileName: string) {
   let rel = path.relative(EXAMPLE_DIR, fileName)
   if (path.isAbsolute(rel) || rel.startsWith("..")) return false
 
   let { dir, name } = path.parse(rel)
   let routeKey = path.join(dir, name)
-  let route = ROUTES.get(routeKey)
-  return route
+  return ROUTES.has(routeKey)
 }
 
 function createProgram(
@@ -50,9 +33,8 @@ function createProgram(
   const originalReadFile = host.readFile
   host.readFile = (fileName: string) => {
     const content = originalReadFile(fileName)
-    let route = getRoute(fileName)
-    if (content && route) {
-      return addTypesToRoute(content, fileName, route)
+    if (content && isRoute(fileName)) {
+      return addTypesToRoute(content, fileName)
     }
     return content
   }
@@ -60,11 +42,7 @@ function createProgram(
   return ts.createProgram(rootFiles, options, host)
 }
 
-function addTypesToRoute(
-  content: string,
-  fileName: string,
-  params: Record<string, boolean>,
-): string {
+function addTypesToRoute(content: string, fileName: string): string {
   const sourceFile = ts.createSourceFile(
     fileName,
     content,
@@ -91,17 +69,8 @@ function addTypesToRoute(
     const expr = content.slice(startIndex, endIndex)
     const afterExpr = content.slice(endIndex)
 
-    const paramEntries = Object.entries(params)
-      .map(([param, optional]) => {
-        let type = `${param}: string`
-        if (optional) type += " | undefined"
-        return type
-      })
-      .join("; ")
-    // const Params = `{ [key: string]: string | undefined; ${paramEntries} }`
-    const Params = `{ ${paramEntries} }`
-
-    const newContent = `${beforeExpr}(${expr}) satisfies (arg: { params: ${Params} }) => string${afterExpr}`
+    let newContent = `import * as T from "./$types.${path.basename(fileName).slice(0, -4)}"\n`
+    newContent += `${beforeExpr}(${expr}) satisfies T.Component${afterExpr}`
     return newContent
   }
 

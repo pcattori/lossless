@@ -65,7 +65,7 @@ function addTypesToRoute(content: string, fileName: string): string {
   return content
 }
 
-function typeCheck(rootDir: string) {
+export function typecheck(rootDir: string) {
   const configPath = ts.findConfigFile(
     rootDir,
     ts.sys.fileExists,
@@ -115,7 +115,3 @@ function typeCheck(rootDir: string) {
     )
   }
 }
-
-// Usage
-const rootDir = process.cwd() // Or provide the path to your project root
-typeCheck(rootDir)

@@ -10,10 +10,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const TYPES = path.resolve(__dirname, "./types.ts")
 
-let routes = await Config.routes()
-routes.forEach(typegen)
-
-async function typegen(route: Config.Route) {
+export async function typegen(route: Config.Route) {
   let params = paramsType(route)
 
   let file = path.join(Config.appDirectory, route.file)
@@ -56,7 +53,6 @@ async function typegen(route: Config.Route) {
     "",
     `export type Component = T.Component<Params, LoaderData>`,
   ].join("\n")
-  console.log(types)
   await fs.writeFile(
     path.join(path.dirname(file), `.types.${path.basename(file)}`),
     types,

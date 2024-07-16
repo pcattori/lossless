@@ -57,7 +57,14 @@ function addTypesToRoute(content: string, fileName: string): string {
     const expr = content.slice(startIndex, endIndex)
     const afterExpr = content.slice(endIndex)
 
-    let newContent = `import * as T from "./.types.${path.basename(fileName).slice(0, -4)}"\n`
+    let importSource = path
+      .join(
+        path.relative(path.dirname(fileName), Config.appDirectory),
+        ".typegen",
+        path.relative(Config.appDirectory, fileName),
+      )
+      .slice(0, -4)
+    let newContent = `import * as T from "${importSource}"\n`
     newContent += `${beforeExpr}(${expr}) satisfies T.Component${afterExpr}`
     return newContent
   }
@@ -65,7 +72,7 @@ function addTypesToRoute(content: string, fileName: string): string {
   return content
 }
 
-export function typecheck(rootDir: string) {
+export default function typecheck(rootDir: string) {
   const configPath = ts.findConfigFile(
     rootDir,
     ts.sys.fileExists,

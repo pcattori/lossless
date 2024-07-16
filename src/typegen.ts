@@ -10,23 +10,27 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const TYPES = path.resolve(__dirname, "./types.ts")
 
-export async function typegen(route: Config.Route) {
+export default async function typegen() {
+  let routes = await Config.routes()
+  await Promise.all(routes.map(typegenRoute))
+}
+
+async function typegenRoute(route: Config.Route) {
   let params = paramsType(route)
 
   let file = path.join(Config.appDirectory, route.file)
   let content = await fs.readFile(file, "utf8")
   let exports = esModuleLexer(content)[1].map((x) => x.n)
 
-  let importSource = path.relative(path.dirname(file), TYPES).slice(0, -3)
   let types = [
-    `import * as T from "${importSource}"`,
+    `import * as T from "${TYPES.slice(0, -3)}"`,
     "",
     params,
     "",
     `export type ServerLoader = T.ServerLoader<Params>`,
     exports.includes("serverLoader")
       ? [
-          `import type { serverLoader } from "./${path.basename(file)}"`,
+          `import type { serverLoader } from "${file.slice(0, -4)}"`,
           `type ServerLoaderData = Awaited<ReturnType<typeof serverLoader>>`,
         ].join("\n")
       : `type ServerLoaderData = undefined`,
@@ -34,7 +38,7 @@ export async function typegen(route: Config.Route) {
     `export type ClientLoader = T.ClientLoader<Params, ServerLoaderData>`,
     exports.includes("clientLoader")
       ? [
-          `import type { clientLoader } from "./${path.basename(file)}"`,
+          `import type { clientLoader } from "${file.slice(0, -4)}"`,
           `type ClientLoaderData = Awaited<ReturnType<typeof clientLoader>>`,
         ].join("\n")
       : `type ClientLoaderData = undefined`,
@@ -53,10 +57,12 @@ export async function typegen(route: Config.Route) {
     "",
     `export type Component = T.Component<Params, LoaderData>`,
   ].join("\n")
-  await fs.writeFile(
-    path.join(path.dirname(file), `.types.${path.basename(file)}`),
-    types,
-  )
+
+  let rel = path.relative(Config.appDirectory, file)
+  let dest = path.join(Config.appDirectory, ".typegen", rel)
+  await fs.mkdir(path.dirname(dest), { recursive: true })
+  await fs.writeFile(dest, types)
+  console.log(`Wrote '${path.relative(Config.appDirectory, dest)}'`)
 }
 
 function paramsType(route: Config.Route): string {

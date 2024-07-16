@@ -1,22 +1,13 @@
 import ts from "typescript"
 import * as path from "path"
 
-import { fileURLToPath } from "url"
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const EXAMPLE_DIR = path.resolve(__dirname, "../example")
+import * as Config from "./config"
 
-type Route = {
-  path: string
-  file: string
-}
-
-let routes: Route[] = (await import(path.join(EXAMPLE_DIR, "routes.ts")))
-  .default
+let routes = await Config.routes()
 const ROUTES = new Set<string>(routes.map((r) => r.file))
 
 function isRoute(fileName: string) {
-  let rel = path.relative(EXAMPLE_DIR, fileName)
+  let rel = path.relative(Config.appDirectory, fileName)
   if (path.isAbsolute(rel) || rel.startsWith("..")) return false
 
   let { dir, name } = path.parse(rel)

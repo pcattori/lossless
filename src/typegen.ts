@@ -3,13 +3,11 @@ import * as path from "node:path"
 
 import { parse as esModuleLexer } from "es-module-lexer"
 
-import { fileURLToPath } from "url"
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const EXAMPLE_DIR = path.resolve(__dirname, "../example")
+import * as Config from "./config"
 
 const TYPES = path.resolve(__dirname, "./types.ts")
 
+// TODO: read this from routes.ts
 typegen({
   path: "products/:id/:brand?",
   file: "routes/product-details.tsx",
@@ -24,7 +22,7 @@ type Route = {
 async function typegen(route: Route) {
   let params = paramsType(route)
 
-  let file = path.join(EXAMPLE_DIR, route.file)
+  let file = path.join(Config.appDirectory, route.file)
   let content = await fs.readFile(file, "utf8")
   let exports = esModuleLexer(content)[1].map((x) => x.n)
 

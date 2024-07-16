@@ -2,6 +2,7 @@ import ts from "typescript"
 import * as path from "path"
 
 import * as Config from "./config"
+import { noext } from "./utils"
 
 let routes = await Config.routes()
 const ROUTES = new Set<string>(routes.map((r) => r.file))
@@ -57,14 +58,12 @@ function addTypesToRoute(content: string, fileName: string): string {
     const expr = content.slice(startIndex, endIndex)
     const afterExpr = content.slice(endIndex)
 
-    let importSource = path
-      .join(
-        path.relative(path.dirname(fileName), Config.appDirectory),
-        ".typegen",
-        path.relative(Config.appDirectory, fileName),
-      )
-      .slice(0, -4)
-    let newContent = `import * as T from "${importSource}"\n`
+    let importSource = path.join(
+      path.relative(path.dirname(fileName), Config.appDirectory),
+      ".typegen",
+      path.relative(Config.appDirectory, fileName),
+    )
+    let newContent = `import * as T from "${noext(importSource)}"\n`
     newContent += `${beforeExpr}(${expr}) satisfies T.Component${afterExpr}`
     return newContent
   }

@@ -5,10 +5,11 @@ import { fileURLToPath } from "node:url"
 import { parse as esModuleLexer } from "es-module-lexer"
 
 import * as Config from "./config"
+import { noext } from "./utils"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const TYPES = path.resolve(__dirname, "./types.ts")
+const TYPES = path.resolve(__dirname, "./types")
 
 export default async function typegen() {
   let routes = await Config.routes()
@@ -23,14 +24,14 @@ async function typegenRoute(route: Config.Route) {
   let exports = esModuleLexer(content)[1].map((x) => x.n)
 
   let types = [
-    `import * as T from "${TYPES.slice(0, -3)}"`,
+    `import * as T from "${TYPES}"`,
     "",
     params,
     "",
     `export type ServerLoader = T.ServerLoader<Params>`,
     exports.includes("serverLoader")
       ? [
-          `import type { serverLoader } from "${file.slice(0, -4)}"`,
+          `import type { serverLoader } from "${noext(file)}"`,
           `type ServerLoaderData = Awaited<ReturnType<typeof serverLoader>>`,
         ].join("\n")
       : `type ServerLoaderData = undefined`,
@@ -38,7 +39,7 @@ async function typegenRoute(route: Config.Route) {
     `export type ClientLoader = T.ClientLoader<Params, ServerLoaderData>`,
     exports.includes("clientLoader")
       ? [
-          `import type { clientLoader } from "${file.slice(0, -4)}"`,
+          `import type { clientLoader } from "${noext(file)}"`,
           `type ClientLoaderData = Awaited<ReturnType<typeof clientLoader>>`,
         ].join("\n")
       : `type ClientLoaderData = undefined`,

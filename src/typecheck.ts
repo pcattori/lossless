@@ -9,10 +9,7 @@ const ROUTES = new Set<string>(routes.map((r) => r.file))
 function isRoute(fileName: string) {
   let rel = path.relative(Config.appDirectory, fileName)
   if (path.isAbsolute(rel) || rel.startsWith("..")) return false
-
-  let { dir, name } = path.parse(rel)
-  let routeKey = path.join(dir, name)
-  return ROUTES.has(routeKey)
+  return ROUTES.has(rel)
 }
 
 function createProgram(

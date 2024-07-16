@@ -57,7 +57,7 @@ function addTypesToRoute(content: string, fileName: string): string {
     const expr = content.slice(startIndex, endIndex)
     const afterExpr = content.slice(endIndex)
 
-    let newContent = `import * as T from "./$types.${path.basename(fileName).slice(0, -4)}"\n`
+    let newContent = `import * as T from "./.types.${path.basename(fileName).slice(0, -4)}"\n`
     newContent += `${beforeExpr}(${expr}) satisfies T.Component${afterExpr}`
     return newContent
   }

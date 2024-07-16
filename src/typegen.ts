@@ -1,25 +1,19 @@
 import * as fs from "node:fs/promises"
 import * as path from "node:path"
+import { fileURLToPath } from "node:url"
 
 import { parse as esModuleLexer } from "es-module-lexer"
 
 import * as Config from "./config"
 
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 const TYPES = path.resolve(__dirname, "./types.ts")
 
-// TODO: read this from routes.ts
-typegen({
-  path: "products/:id/:brand?",
-  file: "routes/product-details.tsx",
-})
+let routes = await Config.routes()
+routes.forEach(typegen)
 
-type Route = {
-  path: string
-  file: string
-}
-
-// find
-async function typegen(route: Route) {
+async function typegen(route: Config.Route) {
   let params = paramsType(route)
 
   let file = path.join(Config.appDirectory, route.file)
@@ -64,12 +58,12 @@ async function typegen(route: Route) {
   ].join("\n")
   console.log(types)
   await fs.writeFile(
-    path.join(path.dirname(file), `$types.${path.basename(file)}`),
+    path.join(path.dirname(file), `.types.${path.basename(file)}`),
     types,
   )
 }
 
-function paramsType(route: Route): string {
+function paramsType(route: Config.Route): string {
   let params = parseParams(route)
   let paramTypes = params.map(([param, optional]) => {
     let type = `  ${param}: string`
@@ -81,7 +75,7 @@ function paramsType(route: Route): string {
 
 type Params = Array<readonly [string, boolean]>
 
-function parseParams(route: Route): Params {
+function parseParams(route: Config.Route): Params {
   let segments = route.path.split("/")
   let params = segments
     .filter((s) => s.startsWith(":"))

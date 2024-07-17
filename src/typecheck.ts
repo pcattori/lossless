@@ -3,6 +3,7 @@ import * as path from "path"
 
 import * as Config from "./config"
 import { noext } from "./utils"
+import { augment, toAugmented } from "./augment"
 
 let routes = await Config.routes()
 const ROUTES = new Set<string>(routes.map((r) => r.file))
@@ -11,13 +12,6 @@ function isRoute(fileName: string) {
   let rel = path.relative(Config.appDirectory, fileName)
   if (path.isAbsolute(rel) || rel.startsWith("..")) return false
   return ROUTES.has(rel)
-}
-
-let exports: Record<string, string | undefined> = {
-  serverLoader: "T.ServerLoader",
-  clientLoader: "T.ClientLoader",
-  // TODO: clientLoaderHydrate
-  HydrateFallback: "T.HydrateFallback",
 }
 
 function createProgram(
@@ -30,7 +24,7 @@ function createProgram(
   host.readFile = (fileName: string) => {
     const content = originalReadFile(fileName)
     if (content && isRoute(fileName)) {
-      return addTypesToRoute(content, fileName)
+      return addTypesToRoute(fileName, content)
     }
     return content
   }
@@ -38,73 +32,16 @@ function createProgram(
   return ts.createProgram(rootFiles, options, host)
 }
 
-function isExported(
-  stmt: ts.VariableStatement | ts.FunctionDeclaration,
-): boolean {
-  let exported = stmt.modifiers?.some(
-    (m) => m.kind === ts.SyntaxKind.ExportKeyword,
-  )
-  return exported === true
-}
-
-function addTypesToRoute(content: string, fileName: string): string {
-  const sourceFile = ts.createSourceFile(
-    fileName,
-    content,
-    ts.ScriptTarget.Latest,
-    true,
-  )
-
-  type Edit = { span: [number, number]; type: string }
-  let edits: Edit[] = []
-
-  sourceFile.statements.forEach((stmt) => {
-    if (ts.isExportAssignment(stmt)) {
-      if (stmt.isExportEquals === true) {
-        throw Error(`Unexpected 'export =' in '${fileName}'`)
-      }
-      let span = [
-        stmt.expression.getStart(sourceFile),
-        stmt.expression.getEnd(),
-      ] as [number, number]
-      edits.push({ span, type: "T.Component" })
-    } else if (ts.isVariableStatement(stmt)) {
-      if (!isExported(stmt)) return
-      for (let decl of stmt.declarationList.declarations) {
-        if (!ts.isIdentifier(decl.name)) continue
-        if (decl.initializer === undefined) continue
-        let type = exports[decl.name.text]
-        if (!type) continue
-        let span = [
-          decl.initializer.getStart(sourceFile),
-          decl.initializer.getEnd(),
-        ] as [number, number]
-        edits.push({ span, type })
-      }
-    } else if (ts.isFunctionDeclaration(stmt)) {
-      if (!isExported(stmt)) return
-      // TODO: handle function declarations for known exports
-    }
-  })
-
-  // sort desc so that content slicing doesn't mess up indices of other edits
-  edits = edits.sort((a, b) => b.span[0] - a.span[0])
-
-  let newContent = content.slice(0)
-  for (let edit of edits) {
-    let [begin, end] = edit.span
-    let before = newContent.slice(0, begin)
-    let expr = newContent.slice(begin, end)
-    let after = newContent.slice(end)
-    newContent = `${before}(${expr}) satisfies ${edit.type}${after}`
-  }
+function addTypesToRoute(fileName: string, content: string): string {
+  let code = augment(fileName, content)
+  let augmented = toAugmented(code)
 
   let importSource = path.join(
     Config.appDirectory,
     ".typegen",
     path.relative(Config.appDirectory, fileName),
   )
-  newContent = `import * as T from "${noext(importSource)}"\n\n` + newContent
+  let newContent = `import * as T from "${noext(importSource)}"\n\n` + augmented
   return newContent
 }
 

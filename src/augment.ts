@@ -7,9 +7,17 @@ type Code = {
   additions: Addition[]
 }
 
+function* reverse<T>(array: T[]): Generator<T> {
+  let i = array.length - 1
+  while (i >= 0) {
+    yield array[i]!
+    i--
+  }
+}
+
 export function toAugmented(code: Code): string {
   let chars = Array.from(code.original)
-  for (let [index, addition] of code.additions) {
+  for (let [index, addition] of reverse(code.additions)) {
     chars.splice(index, 0, addition)
   }
   return chars.join("")
@@ -63,7 +71,7 @@ export function augment(filepath: string, content: string): Code {
       additions.push([stmt.body.getEnd(), `) satisfies ${type}`])
     }
   })
-  return { original: content, additions: additions.reverse() }
+  return { original: content, additions }
 }
 
 function exported(stmt: ts.VariableStatement | ts.FunctionDeclaration) {

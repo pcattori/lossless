@@ -17,6 +17,8 @@ function* reverse<T>(array: T[]): Generator<T> {
 
 export function toAugmented(code: Code): string {
   let chars = Array.from(code.original)
+
+  // iterate over additions in reverse so that splicing doesn't mess up other indices
   for (let [index, addition] of reverse(code.additions)) {
     chars.splice(index, 0, addition)
   }

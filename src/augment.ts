@@ -25,6 +25,32 @@ export function toAugmented(code: Code): string {
   return chars.join("")
 }
 
+export function toVirtualIndex(code: Code, originalIndex: number): number {
+  let virtualOffset = 0
+  for (let [index, addition] of code.additions) {
+    if (index > originalIndex) break
+    virtualOffset += addition.length
+  }
+  return originalIndex + virtualOffset
+}
+
+export function toOriginalIndex(code: Code, virtualIndex: number): number {
+  let originalIndex = virtualIndex
+  let virtualOffset = 0
+  for (let [index, addition] of code.additions) {
+    // before this addition
+    if (virtualIndex < index + virtualOffset) break
+
+    // within this addition
+    if (virtualIndex < index + virtualOffset + addition.length) return index
+
+    // after this addition
+    originalIndex -= addition.length
+    virtualOffset += addition.length
+  }
+  return Math.max(0, originalIndex)
+}
+
 const EXPORT_TO_TYPE: Record<string, string | undefined> = {
   serverLoader: "T.ServerLoader",
   clientLoader: "T.ClientLoader",

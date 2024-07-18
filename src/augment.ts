@@ -7,14 +7,6 @@ type Code = {
   additions: Addition[]
 }
 
-function* reverse<T>(array: T[]): Generator<T> {
-  let i = array.length - 1
-  while (i >= 0) {
-    yield array[i]!
-    i--
-  }
-}
-
 export function toAugmented(code: Code): string {
   let chars = Array.from(code.original)
 
@@ -49,6 +41,14 @@ export function toOriginalIndex(code: Code, virtualIndex: number): number {
     virtualOffset += addition.length
   }
   return Math.max(0, originalIndex)
+}
+
+function* reverse<T>(array: T[]): Generator<T> {
+  let i = array.length - 1
+  while (i >= 0) {
+    yield array[i]!
+    i--
+  }
 }
 
 const EXPORT_TO_TYPE: Record<string, string | undefined> = {

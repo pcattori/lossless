@@ -36,13 +36,12 @@ function addTypesToRoute(fileName: string, content: string): string {
   let code = augment(fileName, content)
   let augmented = toAugmented(code)
 
-  let importSource = path.join(
+  let typegenSource = path.join(
     Config.appDirectory,
     ".typegen",
     path.relative(Config.appDirectory, fileName),
   )
-  let newContent = `import * as T from "${noext(importSource)}"\n\n` + augmented
-  return newContent
+  return `import * as T from "${noext(typegenSource)}"\n\n` + augmented
 }
 
 export default function typecheck(rootDir: string) {

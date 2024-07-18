@@ -1,44 +1,56 @@
 import ts from "typescript"
 
-type Addition = [number, string]
+type Edit = [index: number, addition: string]
 
-type Code = {
+type TextWithEdits = {
   original: string
-  additions: Addition[]
+  edits: Edit[]
+  edited: string
 }
 
-export function toAugmented(code: Code): string {
-  let chars = Array.from(code.original)
+export function make({
+  original,
+  edits,
+}: Omit<TextWithEdits, "edited">): TextWithEdits {
+  let chars = Array.from(original)
 
   // iterate over additions in reverse so that splicing doesn't mess up other indices
-  for (let [index, addition] of reverse(code.additions)) {
+  for (let [index, addition] of reverse(edits)) {
     chars.splice(index, 0, addition)
   }
-  return chars.join("")
+
+  let edited = chars.join("")
+  return { original, edits, edited }
 }
 
-export function toVirtualIndex(code: Code, originalIndex: number): number {
-  let virtualOffset = 0
-  for (let [index, addition] of code.additions) {
+export function toEditedIndex(
+  { edits }: TextWithEdits,
+  originalIndex: number,
+): number {
+  let editOffset = 0
+  for (let [index, addition] of edits) {
     if (index > originalIndex) break
-    virtualOffset += addition.length
+    editOffset += addition.length
   }
-  return originalIndex + virtualOffset
+  return originalIndex + editOffset
 }
 
-export function toOriginalIndex(code: Code, virtualIndex: number): number {
-  let originalIndex = virtualIndex
-  let virtualOffset = 0
-  for (let [index, addition] of code.additions) {
+export function toOriginalIndex(
+  { edits }: TextWithEdits,
+  editedIndex: number,
+): number {
+  let originalIndex = editedIndex
+  let editOffset = 0
+  for (let [index, addition] of edits) {
     // before this addition
-    if (virtualIndex < index + virtualOffset) break
+    if (editedIndex < index + editOffset) break
 
     // within this addition
-    if (virtualIndex < index + virtualOffset + addition.length) return index
+    if (editedIndex < index + editOffset + addition.length) return index
 
     // after this addition
     originalIndex -= addition.length
-    virtualOffset += addition.length
+    editOffset += addition.length
   }
   return Math.max(0, originalIndex)
 }
@@ -58,7 +70,7 @@ const EXPORT_TO_TYPE: Record<string, string | undefined> = {
   HydrateFallback: "T.HydrateFallback",
 }
 
-export function augment(filepath: string, content: string): Code {
+export function augment(filepath: string, content: string): TextWithEdits {
   const sourceFile = ts.createSourceFile(
     filepath,
     content,
@@ -66,7 +78,7 @@ export function augment(filepath: string, content: string): Code {
     true,
   )
 
-  let additions: Addition[] = []
+  let edits: Edit[] = []
 
   sourceFile.statements.forEach((stmt) => {
     if (ts.isExportAssignment(stmt)) {
@@ -74,8 +86,8 @@ export function augment(filepath: string, content: string): Code {
       if (stmt.isExportEquals === true) {
         throw Error(`Unexpected 'export  =' in '${filepath}'`)
       }
-      additions.push([stmt.expression.getStart(sourceFile), "("])
-      additions.push([stmt.expression.getEnd(), ") satisfies T.Component"])
+      edits.push([stmt.expression.getStart(sourceFile), "("])
+      edits.push([stmt.expression.getEnd(), ") satisfies T.Component"])
     } else if (ts.isVariableStatement(stmt)) {
       // export const loader = |>(<|() => {}|>)satisfies <type><|
       if (!exported(stmt)) return
@@ -84,8 +96,8 @@ export function augment(filepath: string, content: string): Code {
         if (decl.initializer === undefined) continue
         let type = EXPORT_TO_TYPE[decl.name.text]
         if (!type) continue
-        additions.push([decl.initializer.getStart(sourceFile), "("])
-        additions.push([decl.initializer.getEnd(), `) satisfies ${type}`])
+        edits.push([decl.initializer.getStart(sourceFile), "("])
+        edits.push([decl.initializer.getEnd(), `) satisfies ${type}`])
       }
     } else if (ts.isFunctionDeclaration(stmt)) {
       // export |>const loader = (<|function loader() {}|>) satisfies <type><|
@@ -95,11 +107,11 @@ export function augment(filepath: string, content: string): Code {
       let type = EXPORT_TO_TYPE[stmt.name.text]
       if (!type) return
       if (!stmt.body) return
-      additions.push([exp.getEnd() + 1, `const ${stmt.name.text} = (`])
-      additions.push([stmt.body.getEnd(), `) satisfies ${type}`])
+      edits.push([exp.getEnd() + 1, `const ${stmt.name.text} = (`])
+      edits.push([stmt.body.getEnd(), `) satisfies ${type}`])
     }
   })
-  return { original: content, additions }
+  return make({ original: content, edits })
 }
 
 function exported(stmt: ts.VariableStatement | ts.FunctionDeclaration) {

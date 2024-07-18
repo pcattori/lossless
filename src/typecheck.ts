@@ -3,7 +3,7 @@ import * as path from "path"
 
 import * as Config from "./config"
 import { noext } from "./utils"
-import { augment, toAugmented } from "./augment"
+import { augment } from "./augment"
 
 let routes = await Config.routes()
 const ROUTES = new Set<string>(routes.map((r) => r.file))
@@ -34,14 +34,13 @@ function createProgram(
 
 function addTypesToRoute(fileName: string, content: string): string {
   let code = augment(fileName, content)
-  let augmented = toAugmented(code)
 
   let typegenSource = path.join(
     Config.appDirectory,
     ".typegen",
     path.relative(Config.appDirectory, fileName),
   )
-  return `import * as T from "${noext(typegenSource)}"\n\n` + augmented
+  return `import * as T from "${noext(typegenSource)}"\n\n` + code.edited
 }
 
 export default function typecheck(rootDir: string) {

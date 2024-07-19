@@ -1,5 +1,5 @@
 import ts from "typescript"
-import * as path from "path"
+import * as path from "node:path"
 
 import * as Config from "./config"
 import { annotateRouteExports } from "./annotate-route-exports"

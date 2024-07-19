@@ -9,7 +9,7 @@ export type Route = {
   file: string
 }
 
-export const appDirectory = path.resolve(__dirname, "../example")
+export const appDirectory = path.resolve(__dirname, "../../../example")
 
 export async function routes(): Promise<Route[]> {
   let { default: routes } = await import(path.join(appDirectory, "routes.ts"))

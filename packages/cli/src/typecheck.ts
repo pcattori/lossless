@@ -4,10 +4,13 @@ import * as path from "node:path"
 import * as Config from "./config"
 import { annotateRouteExports } from "./annotate-route-exports"
 
-let routes = await Config.routes()
-const ROUTES = new Set<string>(routes.map((r) => r.file))
+let ROUTES: Set<string>
 
 function isRoute(fileName: string) {
+  if (!ROUTES) {
+    let routes = Config.routes()
+    ROUTES = new Set<string>(routes.map((r) => r.file))
+  }
   let rel = path.relative(Config.appDirectory, fileName)
   if (path.isAbsolute(rel) || rel.startsWith("..")) return false
   return ROUTES.has(rel)

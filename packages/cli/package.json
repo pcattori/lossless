@@ -1,10 +1,16 @@
 {
   "private": true,
   "type": "module",
+  "bin": {
+    "check": "./bin.js"
+  },
+  "files": [
+    "bin.js",
+    "dist/"
+  ],
   "scripts": {
-    "build": "tsup --clean --format=esm src/plugin.ts",
-    "watch": "pnpm build --watch",
-    "cli": "tsx src/cli.ts"
+    "build": "tsup --clean --format=cjs --shims --target=esnext src/cli.ts",
+    "watch": "pnpm build --watch"
   },
   "devDependencies": {
     "@types/node": "^20.14.9",

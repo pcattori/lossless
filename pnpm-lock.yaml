@@ -13,6 +13,9 @@ importers:
       '@lossless/cli':
         specifier: workspace:*
         version: link:../packages/cli
+      lossless:
+        specifier: workspace:*
+        version: link:../packages/lossless
     devDependencies:
       '@types/node':
         specifier: ^20.14.9
@@ -29,6 +32,25 @@ importers:
       es-module-lexer:
         specifier: ^1.5.4
         version: 1.5.4
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.9
+        version: 20.14.11
+      lossless:
+        specifier: workspace:*
+        version: link:../lossless
+      tsup:
+        specifier: ^8.1.2
+        version: 8.2.0(tsx@4.16.2)(typescript@5.5.3)
+      tsx:
+        specifier: ^4.16.2
+        version: 4.16.2
+      typescript:
+        specifier: ^5.5.3
+        version: 5.5.3
+
+  packages/lossless:
+    dependencies:
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -48,9 +70,6 @@ importers:
       tsup:
         specifier: ^8.1.2
         version: 8.2.0(tsx@4.16.2)(typescript@5.5.3)
-      tsx:
-        specifier: ^4.16.2
-        version: 4.16.2
       typescript:
         specifier: ^5.5.3
         version: 5.5.3

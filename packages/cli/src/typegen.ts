@@ -6,8 +6,6 @@ import { parse as esModuleLexer } from "es-module-lexer"
 import * as Config from "./config"
 import { noext } from "./utils"
 
-const TYPES = path.resolve(__dirname, "./types")
-
 export default async function typegen() {
   let routes = await Config.routes()
   await Promise.all(routes.map(typegenRoute))
@@ -21,7 +19,7 @@ async function typegenRoute(route: Config.Route) {
   let exports = esModuleLexer(content)[1].map((x) => x.n)
 
   let types = [
-    `import * as T from "${TYPES}"`,
+    `import * as T from "lossless"`,
     "",
     params,
     "",

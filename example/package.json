@@ -6,6 +6,7 @@
     "tsc": "tsc"
   },
   "dependencies": {
+    "lossless": "workspace:*",
     "@lossless/cli": "workspace:*"
   },
   "devDependencies": {

@@ -7,4 +7,5 @@ export default defineConfig({
   target: "node18",
   dts: false,
   banner: { js: "#!/usr/bin/env node" },
+  external: ["typescript"],
 })

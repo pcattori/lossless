@@ -4,23 +4,19 @@ import * as path from "node:path"
 import * as Config from "./config"
 import { annotateRouteExports } from "./annotate-route-exports"
 
-let ROUTES: Set<string>
-
-function isRoute(fileName: string) {
-  if (!ROUTES) {
-    let routes = Config.routes()
-    ROUTES = new Set<string>(routes.map((r) => r.file))
-  }
-  let rel = path.relative(Config.appDirectory, fileName)
-  if (path.isAbsolute(rel) || rel.startsWith("..")) return false
-  return ROUTES.has(rel)
-}
-
-function createProgram(
+async function createProgram(
   rootFiles: string[],
   options: ts.CompilerOptions,
-): ts.Program {
+): Promise<ts.Program> {
   const host = ts.createCompilerHost(options)
+
+  const routes = await Config.routes()
+  const routePaths = new Set(routes.map((r) => r.file))
+  function isRoute(filepath: string) {
+    let rel = path.relative(Config.appDirectory, filepath)
+    if (path.isAbsolute(rel) || rel.startsWith("..")) return false
+    return routePaths.has(rel)
+  }
 
   const originalReadFile = host.readFile
   host.readFile = (fileName: string) => {
@@ -34,7 +30,7 @@ function createProgram(
   return ts.createProgram(rootFiles, options, host)
 }
 
-export default function typecheck(rootDir: string) {
+export default async function typecheck(rootDir: string) {
   const configPath = ts.findConfigFile(
     rootDir,
     ts.sys.fileExists,
@@ -51,7 +47,7 @@ export default function typecheck(rootDir: string) {
     path.dirname(configPath),
   )
 
-  const program = createProgram(
+  const program = await createProgram(
     parsedCommandLine.fileNames,
     parsedCommandLine.options,
   )

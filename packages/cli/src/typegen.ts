@@ -1,14 +1,11 @@
 import * as fs from "node:fs/promises"
 import * as path from "node:path"
-import { fileURLToPath } from "node:url"
 
 import { parse as esModuleLexer } from "es-module-lexer"
 
 import * as Config from "./config"
 import { noext } from "./utils"
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 const TYPES = path.resolve(__dirname, "./types")
 
 export default async function typegen() {

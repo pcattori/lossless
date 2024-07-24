@@ -9,8 +9,8 @@
     "dist/"
   ],
   "scripts": {
-    "build": "tsup --clean --format=cjs --shims --target=esnext src/cli.ts",
-    "watch": "pnpm build --watch"
+    "build": "tsup",
+    "watch": "tsup --watch"
   },
   "devDependencies": {
     "@types/node": "^20.14.9",

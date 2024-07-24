@@ -22,6 +22,8 @@
     /* If your code runs in the DOM: */
     "lib": ["es2022", "dom", "dom.iterable"],
 
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+
+    "plugins": [{ "name": "@lossless/ts-plugin" }]
   }
 }

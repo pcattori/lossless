@@ -10,13 +10,16 @@ importers:
 
   example:
     dependencies:
-      '@lossless/cli':
-        specifier: workspace:*
-        version: link:../packages/cli
       lossless:
         specifier: workspace:*
         version: link:../packages/lossless
     devDependencies:
+      '@lossless/cli':
+        specifier: workspace:*
+        version: link:../packages/cli
+      '@lossless/ts-plugin':
+        specifier: workspace:*
+        version: link:../packages/ts-plugin
       '@types/node':
         specifier: ^20.14.9
         version: 20.14.11

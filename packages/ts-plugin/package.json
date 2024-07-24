@@ -1,6 +1,7 @@
 {
   "private": true,
   "name": "@lossless/ts-plugin",
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsup",
     "watch": "tsup --watch"

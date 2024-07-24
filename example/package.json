@@ -1,0 +1,15 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "lossless typecheck",
+    "tsc": "tsc"
+  },
+  "dependencies": {
+    "@lossless/cli": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "typescript": "^5.5.3"
+  }
+}

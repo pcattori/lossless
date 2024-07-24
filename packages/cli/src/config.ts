@@ -5,7 +5,7 @@ export type Route = {
   file: string
 }
 
-export const appDirectory = path.resolve(__dirname, "../../../example")
+export const appDirectory = process.cwd()
 
 export async function routes(): Promise<Route[]> {
   let { default: routes } = await import(path.join(appDirectory, "routes.mjs"))

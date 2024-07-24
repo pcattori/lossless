@@ -8,6 +8,19 @@ importers:
 
   .: {}
 
+  example:
+    dependencies:
+      '@lossless/cli':
+        specifier: workspace:*
+        version: link:../packages/cli
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.9
+        version: 20.14.11
+      typescript:
+        specifier: ^5.5.3
+        version: 5.5.3
+
   packages/cli:
     dependencies:
       cac:

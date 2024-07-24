@@ -1,8 +1,9 @@
 {
   "private": true,
+  "name": "@lossless/cli",
   "type": "module",
   "bin": {
-    "check": "./bin.js"
+    "lossless": "./bin.js"
   },
   "files": [
     "bin.js",

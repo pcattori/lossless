@@ -11,8 +11,7 @@ cli.command("").action(() => {
 
 cli.command("typecheck").action(async () => {
   await typegen()
-  const rootDir = process.cwd()
-  typecheck(rootDir)
+  typecheck()
 })
 
 cli.command("typegen").action(typegen)

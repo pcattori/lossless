@@ -30,9 +30,9 @@ async function createProgram(
   return ts.createProgram(rootFiles, options, host)
 }
 
-export default async function typecheck(rootDir: string) {
+export default async function typecheck() {
   const configPath = ts.findConfigFile(
-    rootDir,
+    Config.appDirectory,
     ts.sys.fileExists,
     "tsconfig.json",
   )
@@ -57,7 +57,7 @@ export default async function typecheck(rootDir: string) {
     const formattedDiagnostics = ts.formatDiagnosticsWithColorAndContext(
       diagnostics,
       {
-        getCurrentDirectory: () => rootDir,
+        getCurrentDirectory: () => Config.appDirectory,
         getCanonicalFileName: (fileName) => fileName,
         getNewLine: () => ts.sys.newLine,
       },

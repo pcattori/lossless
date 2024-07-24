@@ -4,33 +4,7 @@ import * as path from "node:path"
 import * as Config from "./config"
 import { annotateRouteExports } from "./annotate-route-exports"
 
-async function createProgram(
-  rootFiles: string[],
-  options: ts.CompilerOptions,
-): Promise<ts.Program> {
-  const host = ts.createCompilerHost(options)
-
-  const routes = await Config.routes()
-  const routePaths = new Set(routes.map((r) => r.file))
-  function isRoute(filepath: string) {
-    let rel = path.relative(Config.appDirectory, filepath)
-    if (path.isAbsolute(rel) || rel.startsWith("..")) return false
-    return routePaths.has(rel)
-  }
-
-  const originalReadFile = host.readFile
-  host.readFile = (fileName: string) => {
-    const content = originalReadFile(fileName)
-    if (content && isRoute(fileName)) {
-      return annotateRouteExports(fileName, content).edited
-    }
-    return content
-  }
-
-  return ts.createProgram(rootFiles, options, host)
-}
-
-export default async function typecheck() {
+function parseTsconfig(): ts.ParsedCommandLine {
   const configPath = ts.findConfigFile(
     Config.appDirectory,
     ts.sys.fileExists,
@@ -41,18 +15,35 @@ export default async function typecheck() {
   }
 
   const configFile = ts.readConfigFile(configPath, ts.sys.readFile)
-  const parsedCommandLine = ts.parseJsonConfigFileContent(
+  return ts.parseJsonConfigFileContent(
     configFile.config,
     ts.sys,
     path.dirname(configPath),
   )
+}
 
-  const program = await createProgram(
-    parsedCommandLine.fileNames,
-    parsedCommandLine.options,
-  )
+export default async function typecheck() {
+  const routes = await Config.routes()
+  const routePaths = new Set(routes.map((r) => r.file))
+  function isRoute(filepath: string) {
+    let rel = path.relative(Config.appDirectory, filepath)
+    if (path.isAbsolute(rel) || rel.startsWith("..")) return false
+    return routePaths.has(rel)
+  }
+
+  const { fileNames, options } = parseTsconfig()
+  const host = ts.createCompilerHost(options)
+  const originalReadFile = host.readFile
+  host.readFile = (fileName: string) => {
+    const content = originalReadFile(fileName)
+    if (content && isRoute(fileName)) {
+      return annotateRouteExports(fileName, content).edited
+    }
+    return content
+  }
+  const program = ts.createProgram(fileNames, options, host)
+
   const diagnostics = ts.getPreEmitDiagnostics(program)
-
   if (diagnostics.length > 0) {
     const formattedDiagnostics = ts.formatDiagnosticsWithColorAndContext(
       diagnostics,

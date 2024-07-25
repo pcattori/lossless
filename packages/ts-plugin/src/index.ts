@@ -61,9 +61,17 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
     // trace() {}
     // error() {}
 
-    getCompilationSettings = host.getCompilationSettings
-    getCurrentDirectory = host.getCurrentDirectory
-    getDefaultLibFileName = host.getDefaultLibFileName
+    getCompilationSettings() {
+      return host.getCompilationSettings()
+    }
+
+    getCurrentDirectory() {
+      return host.getCurrentDirectory()
+    }
+
+    getDefaultLibFileName(o: any) {
+      return host.getDefaultLibFileName(o)
+    }
 
     getScriptFileNames(): string[] {
       const names: Set<string> = new Set(Object.keys(this.files))

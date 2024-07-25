@@ -71,22 +71,34 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       for (const file of files) {
         names.add(file)
       }
+      info.project.projectService.logger.info(
+        `[ts-plugin] getScriptFileNames: ${JSON.stringify(names)}`,
+      )
       return [...names]
     }
 
     getScriptVersion(fileName: string) {
+      info.project.projectService.logger.info(
+        `[ts-plugin] getScriptVersion ${fileName}`,
+      )
       const file = this.files[fileName]
       if (!file) return host.getScriptVersion(fileName)
       return file.version.toString()
     }
 
     getScriptSnapshot(fileName: string) {
+      info.project.projectService.logger.info(
+        `[ts-plugin] getScriptSnapshot ${fileName}`,
+      )
       const file = this.files[fileName]
       if (!file) return host.getScriptSnapshot(fileName)
       return file.file
     }
 
     readFile(fileName: string) {
+      info.project.projectService.logger.info(
+        `[ts-plugin] readFile ${fileName}`,
+      )
       const file = this.files[fileName]
       return file
         ? file.file.getText(0, file.file.getLength())
@@ -94,10 +106,16 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
     }
 
     fileExists(fileName: string) {
+      info.project.projectService.logger.info(
+        `[ts-plugin] fileExists ${fileName}`,
+      )
       return this.files[fileName] !== undefined || host.fileExists(fileName)
     }
 
     getRouteScriptSnapshotIfUpToDate(fileName: string) {
+      info.project.projectService.logger.info(
+        `[ts-plugin] getRouteScriptSnapshotIfUpToDate ${fileName}`,
+      )
       const scriptVersion = this.getScriptVersion(fileName)
       if (
         !this.files[fileName] ||
@@ -109,6 +127,9 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       return this.files[fileName]
     }
     upsertRouteFile(fileName: string) {
+      info.project.projectService.logger.info(
+        `[ts-plugin] upsertRouteFile ${fileName}`,
+      )
       const sourceFile = info.languageService
         .getProgram()
         ?.getSourceFile(fileName)
@@ -160,12 +181,32 @@ function getVirtualLS(
 // definitions
 // ----------------------------------------------------------------------------
 
+function decorateGetDefinition(
+  ls: ts.LanguageService,
+  info: ts.server.PluginCreateInfo,
+  ts: TS,
+) {
+  info.project.projectService.logger.info(`[ts-plugin] decorateGetDefinition`)
+  // const getDefinitionAndBoundSpan = ls.getDefinitionAndBoundSpan
+  ls.getDefinitionAndBoundSpan = (fileName, position) => {
+    return getRouteDefinitions(ts, info, fileName, position)
+    // const definition = getDefinitionAndBoundSpan(fileName, position)
+    // if (!definition?.definitions) {
+    //   return getRouteDefinitions(ts, info, fileName, position)
+    // }
+    // return definition
+  }
+}
+
 function getRouteDefinitions(
   ts: TS,
   info: ts.server.PluginCreateInfo,
   fileName: string,
   position: number,
 ) {
+  info.project.projectService.logger.info(
+    `[ts-plugin] getRouteDefinitions ${fileName}`,
+  )
   const virtual = getVirtualLanguageService(info, ts)
   const result = getVirtualLS(virtual, fileName)
   if (!result) return

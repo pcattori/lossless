@@ -7,9 +7,14 @@ type TS = typeof ts
 // ----------------------------------------------------------------------------
 
 function init(modules: { typescript: TS }) {
-  // const ts = modules.typescript
+  const ts = modules.typescript
 
-  function create(/* info: ts.server.PluginCreateInfo */) {}
+  function create(info: ts.server.PluginCreateInfo) {
+    info.project.projectService.logger.info("[ts-plugin] setup")
+    const ls = info.languageService
+    decorateGetDefinition(ls, info, ts)
+    return ls
+  }
 
   return { create }
 }

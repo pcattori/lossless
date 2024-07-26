@@ -29,6 +29,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@lossless/dev':
+        specifier: workspace:*
+        version: link:../dev
       cac:
         specifier: ^6.7.14
         version: 6.7.14
@@ -48,6 +51,18 @@ importers:
       tsx:
         specifier: ^4.16.2
         version: 4.16.2
+      typescript:
+        specifier: ^5.5.3
+        version: 5.5.3
+
+  packages/dev:
+    devDependencies:
+      '@types/node':
+        specifier: ^20.14.9
+        version: 20.14.11
+      tsup:
+        specifier: ^8.1.2
+        version: 8.2.0(tsx@4.16.2)(typescript@5.5.3)
       typescript:
         specifier: ^5.5.3
         version: 5.5.3

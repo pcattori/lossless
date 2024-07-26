@@ -18,6 +18,7 @@
     "typescript": "^5.5.3"
   },
   "dependencies": {
+    "@lossless/dev": "workspace:*",
     "cac": "^6.7.14",
     "es-module-lexer": "^1.5.4"
   },

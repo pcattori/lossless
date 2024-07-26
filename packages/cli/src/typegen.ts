@@ -2,9 +2,9 @@ import * as fs from "node:fs/promises"
 import * as path from "node:path"
 
 import { parse as esModuleLexer } from "es-module-lexer"
+import { noext } from "@lossless/dev"
 
 import * as Config from "./config"
-import { noext } from "./utils"
 
 export default async function typegen() {
   let routes = await Config.routes()

@@ -1,7 +1,7 @@
 import * as path from "node:path"
 import ts from "typescript"
 
-import * as Config from "./config"
+import type { Config } from "./config"
 import * as TextWithEdits from "./text-with-edits"
 import { noext } from "./utils"
 
@@ -13,6 +13,7 @@ const EXPORT_TO_TYPE: Record<string, string | undefined> = {
 }
 
 export function annotateRouteExports(
+  config: Config,
   filepath: string,
   content: string,
 ): TextWithEdits.Type {
@@ -24,9 +25,9 @@ export function annotateRouteExports(
   )
 
   let typegenSource = path.join(
-    Config.appDirectory,
+    config.appDirectory,
     ".typegen",
-    path.relative(Config.appDirectory, filepath),
+    path.relative(config.appDirectory, filepath),
   )
   let edits: TextWithEdits.Edit[] = [
     [0, `import * as T from "${noext(typegenSource)}"\n\n`],

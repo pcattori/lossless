@@ -2,7 +2,7 @@ import ts from "typescript"
 import * as path from "node:path"
 
 import * as Config from "./config"
-import { annotateRouteExports } from "./annotate-route-exports"
+import { annotateRouteExports } from "@lossless/dev"
 
 function parseTsconfig(): ts.ParsedCommandLine {
   const configPath = ts.findConfigFile(
@@ -37,7 +37,7 @@ export default async function typecheck() {
   host.readFile = (fileName: string) => {
     const content = originalReadFile(fileName)
     if (content && isRoute(fileName)) {
-      return annotateRouteExports(fileName, content).edited
+      return annotateRouteExports(Config, fileName, content).edited
     }
     return content
   }

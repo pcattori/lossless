@@ -1,0 +1,18 @@
+{
+  "private": true,
+  "name": "@lossless/dev",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "watch": "tsup --watch"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "tsup": "^8.1.2",
+    "typescript": "^5.5.3"
+  }
+}

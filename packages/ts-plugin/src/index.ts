@@ -195,14 +195,14 @@ function decorateGetDefinition(
   ts: TS,
 ) {
   info.project.projectService.logger.info(`[ts-plugin] decorateGetDefinition`)
-  // const getDefinitionAndBoundSpan = ls.getDefinitionAndBoundSpan
+  const getDefinitionAndBoundSpan = ls.getDefinitionAndBoundSpan
   ls.getDefinitionAndBoundSpan = (fileName, position) => {
-    return getRouteDefinitions(ts, info, fileName, position)
-    // const definition = getDefinitionAndBoundSpan(fileName, position)
-    // if (!definition?.definitions) {
-    //   return getRouteDefinitions(ts, info, fileName, position)
-    // }
-    // return definition
+    // return getRouteDefinitions(ts, info, fileName, position)
+    const definition = getDefinitionAndBoundSpan(fileName, position)
+    if (!definition?.definitions) {
+      return getRouteDefinitions(ts, info, fileName, position)
+    }
+    return definition
   }
 }
 

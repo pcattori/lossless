@@ -14,7 +14,7 @@ function init(modules: { typescript: TS }) {
   const ts = modules.typescript
 
   function create(info: ts.server.PluginCreateInfo) {
-    info.project.projectService.logger.info("[ts-plugin] setup")
+    info.project.projectService.logger.info("[@lossless/ts-plugin] setup")
     const ls = info.languageService
     decorateGetDefinition(ls, info, ts)
     decorateHover(ls, info, ts)
@@ -83,34 +83,22 @@ function getAutotypeLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       for (const file of files) {
         names.add(file)
       }
-      info.project.projectService.logger.info(
-        `[ts-plugin] getScriptFileNames: ${JSON.stringify(names)}`,
-      )
       return [...names]
     }
 
     getScriptVersion(fileName: string) {
-      info.project.projectService.logger.info(
-        `[ts-plugin] getScriptVersion ${fileName}`,
-      )
       const route = this.routes[fileName]
       if (!route) return host.getScriptVersion(fileName)
       return route.version.toString()
     }
 
     getScriptSnapshot(fileName: string) {
-      info.project.projectService.logger.info(
-        `[ts-plugin] getScriptSnapshot ${fileName}`,
-      )
       const route = this.routes[fileName]
       if (!route) return host.getScriptSnapshot(fileName)
       return route.snapshot
     }
 
     readFile(fileName: string) {
-      info.project.projectService.logger.info(
-        `[ts-plugin] readFile ${fileName}`,
-      )
       const route = this.routes[fileName]
       return route
         ? route.snapshot.getText(0, route.snapshot.getLength())
@@ -118,16 +106,10 @@ function getAutotypeLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
     }
 
     fileExists(fileName: string) {
-      info.project.projectService.logger.info(
-        `[ts-plugin] fileExists ${fileName}`,
-      )
       return this.routes[fileName] !== undefined || host.fileExists(fileName)
     }
 
     getRouteIfUpToDate(fileName: string) {
-      info.project.projectService.logger.info(
-        `[ts-plugin] getRouteScriptSnapshotIfUpToDate ${fileName}`,
-      )
       const scriptVersion = this.getScriptVersion(fileName)
       const route = this.routes[fileName]
       if (
@@ -141,9 +123,6 @@ function getAutotypeLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
     }
 
     upsertRouteFile(fileName: string) {
-      info.project.projectService.logger.info(
-        `[ts-plugin] upsertRouteFile ${fileName}`,
-      )
       const sourceFile = info.languageService
         .getProgram()
         ?.getSourceFile(fileName)
@@ -188,9 +167,6 @@ function decorateSemanticDiagnostics(
   info: ts.server.PluginCreateInfo,
   ts: TS,
 ) {
-  info.project.projectService.logger.info(
-    `[ts-plugin] decorateSemanticDiagnostics`,
-  )
   const getSemanticDiagnostics = ls.getSemanticDiagnostics
   ls.getSemanticDiagnostics = (fileName: string) => {
     const autotype = getAutotypeLanguageService(info, ts)
@@ -221,7 +197,6 @@ function decorateHover(
   info: ts.server.PluginCreateInfo,
   ts: TS,
 ) {
-  info.project.projectService.logger.info(`[ts-plugin] decorateHover`)
   const getQuickInfoAtPosition = ls.getQuickInfoAtPosition
   ls.getQuickInfoAtPosition = (fileName: string, index: number) => {
     const autotype = getAutotypeLanguageService(info, ts)
@@ -254,7 +229,6 @@ function decorateGetDefinition(
   info: ts.server.PluginCreateInfo,
   ts: TS,
 ) {
-  info.project.projectService.logger.info(`[ts-plugin] decorateGetDefinition`)
   const getDefinitionAndBoundSpan = ls.getDefinitionAndBoundSpan
   ls.getDefinitionAndBoundSpan = (fileName, index) => {
     const autotype = getAutotypeLanguageService(info, ts)

@@ -24,7 +24,7 @@ export = init
 // ----------------------------------------------------------------------------
 
 type RouteSnapshot = {
-  file: ts.IScriptSnapshot
+  snapshot: ts.IScriptSnapshot
   version: string
 }
 
@@ -100,7 +100,7 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       )
       const file = this.files[fileName]
       if (!file) return host.getScriptSnapshot(fileName)
-      return file.file
+      return file.snapshot
     }
 
     readFile(fileName: string) {
@@ -109,7 +109,7 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       )
       const file = this.files[fileName]
       return file
-        ? file.file.getText(0, file.file.getLength())
+        ? file.snapshot.getText(0, file.snapshot.getLength())
         : host.readFile(fileName)
     }
 
@@ -144,15 +144,15 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       if (!sourceFile) return
 
       const { text } = sourceFile
-      const snap = ts.ScriptSnapshot.fromString(text)
-      snap.getChangeRange = (_) => undefined
+      const snapshot = ts.ScriptSnapshot.fromString(text)
+      snapshot.getChangeRange = (_) => undefined
 
       this.files[fileName] = {
         version:
           this.files[fileName] === undefined
             ? FORCE_UPDATE_VERSION
             : host.getScriptVersion(fileName),
-        file: snap,
+        snapshot,
       }
       return this.files[fileName]
     }

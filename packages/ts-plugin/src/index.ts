@@ -23,7 +23,7 @@ export = init
 // virtual
 // ----------------------------------------------------------------------------
 
-type RouteSnapshot = {
+type RouteModule = {
   snapshot: ts.IScriptSnapshot
   version: string
 }
@@ -31,7 +31,7 @@ type RouteSnapshot = {
 type VirtualLanguageServiceHost = {
   getRouteScriptSnapshotIfUpToDate: (
     fileName: string,
-  ) => RouteSnapshot | undefined
+  ) => RouteModule | undefined
   upsertRouteFile: (fileName: string) => void
 }
 
@@ -52,7 +52,7 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
   const host = info.languageServiceHost
 
   class VirtualLanguageServiceHost implements ts.LanguageServiceHost {
-    private files: Record<string, RouteSnapshot> = {}
+    private routes: Record<string, RouteModule> = {}
 
     constructor() {}
 
@@ -74,7 +74,7 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
     }
 
     getScriptFileNames(): string[] {
-      const names: Set<string> = new Set(Object.keys(this.files))
+      const names: Set<string> = new Set(Object.keys(this.routes))
       const files = host.getScriptFileNames()
       for (const file of files) {
         names.add(file)
@@ -89,27 +89,27 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       info.project.projectService.logger.info(
         `[ts-plugin] getScriptVersion ${fileName}`,
       )
-      const file = this.files[fileName]
-      if (!file) return host.getScriptVersion(fileName)
-      return file.version.toString()
+      const route = this.routes[fileName]
+      if (!route) return host.getScriptVersion(fileName)
+      return route.version.toString()
     }
 
     getScriptSnapshot(fileName: string) {
       info.project.projectService.logger.info(
         `[ts-plugin] getScriptSnapshot ${fileName}`,
       )
-      const file = this.files[fileName]
-      if (!file) return host.getScriptSnapshot(fileName)
-      return file.snapshot
+      const route = this.routes[fileName]
+      if (!route) return host.getScriptSnapshot(fileName)
+      return route.snapshot
     }
 
     readFile(fileName: string) {
       info.project.projectService.logger.info(
         `[ts-plugin] readFile ${fileName}`,
       )
-      const file = this.files[fileName]
-      return file
-        ? file.snapshot.getText(0, file.snapshot.getLength())
+      const route = this.routes[fileName]
+      return route
+        ? route.snapshot.getText(0, route.snapshot.getLength())
         : host.readFile(fileName)
     }
 
@@ -117,7 +117,7 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       info.project.projectService.logger.info(
         `[ts-plugin] fileExists ${fileName}`,
       )
-      return this.files[fileName] !== undefined || host.fileExists(fileName)
+      return this.routes[fileName] !== undefined || host.fileExists(fileName)
     }
 
     getRouteScriptSnapshotIfUpToDate(fileName: string) {
@@ -126,13 +126,13 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       )
       const scriptVersion = this.getScriptVersion(fileName)
       if (
-        !this.files[fileName] ||
+        !this.routes[fileName] ||
         scriptVersion !== host.getScriptVersion(fileName) ||
         scriptVersion === FORCE_UPDATE_VERSION
       ) {
         return undefined
       }
-      return this.files[fileName]
+      return this.routes[fileName]
     }
     upsertRouteFile(fileName: string) {
       info.project.projectService.logger.info(
@@ -147,14 +147,14 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       const snapshot = ts.ScriptSnapshot.fromString(text)
       snapshot.getChangeRange = (_) => undefined
 
-      this.files[fileName] = {
+      this.routes[fileName] = {
         version:
-          this.files[fileName] === undefined
+          this.routes[fileName] === undefined
             ? FORCE_UPDATE_VERSION
             : host.getScriptVersion(fileName),
         snapshot,
       }
-      return this.files[fileName]
+      return this.routes[fileName]
     }
   }
 

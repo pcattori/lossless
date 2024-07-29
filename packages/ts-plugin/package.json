@@ -1,12 +1,17 @@
 {
   "private": true,
   "name": "@lossless/ts-plugin",
-  "main": "./dist/index.js",
+  "type": "module",
+  "main": "./dist/index.cjs",
   "scripts": {
     "build": "tsup",
     "watch": "tsup --watch"
   },
+  "peerDependencies": {
+    "@lossless/dev": "workspace:*"
+  },
   "devDependencies": {
+    "@lossless/dev": "workspace:*",
     "@types/node": "^20.14.9",
     "tsup": "^8.1.2",
     "typescript": "^5.5.3"

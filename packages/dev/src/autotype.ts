@@ -58,7 +58,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
   return new AutotypedRoute(code, splices)
 }
 
-class AutotypedRoute {
+export class AutotypedRoute {
   private _originalCode: string
   private _splices: [number, string][]
 

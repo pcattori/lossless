@@ -73,6 +73,9 @@ importers:
 
   packages/ts-plugin:
     devDependencies:
+      '@lossless/dev':
+        specifier: workspace:*
+        version: link:../dev
       '@types/node':
         specifier: ^20.14.9
         version: 20.14.11

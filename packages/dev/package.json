@@ -7,10 +7,12 @@
   },
   "exports": {
     "autotype": {
-      "require": "./dist/autotype.cjs"
+      "import": "./dist/autotype.js",
+      "types": "./dist/autotype.d.ts"
     },
     "typegen": {
-      "require": "./dist/typegen.cjs"
+      "import": "./dist/typegen.js",
+      "types": "./dist/typegen.d.ts"
     }
   },
   "files": [

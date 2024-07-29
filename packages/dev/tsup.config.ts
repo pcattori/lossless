@@ -4,7 +4,7 @@ export default defineConfig([
   {
     clean: true,
     entry: ["./src/autotype.ts", "./src/typegen.ts"],
-    format: ["cjs"],
+    format: ["esm"],
     target: "node18",
     dts: true,
     external: ["typescript"],

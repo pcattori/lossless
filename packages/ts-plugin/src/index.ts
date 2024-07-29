@@ -208,10 +208,11 @@ function decorateSemanticDiagnostics(
     for (let diagnostic of virtual.languageService.getSemanticDiagnostics(
       fileName,
     )) {
-      if (diagnostic.start) {
-        diagnostic.start = route.autotyped.toOriginalIndex(diagnostic.start)
+      let start = diagnostic.start
+      if (start) {
+        start = route.autotyped.toOriginalIndex(start)
       }
-      diagnostics.push(diagnostic)
+      diagnostics.push({ ...diagnostic, start })
     }
     return diagnostics
   }

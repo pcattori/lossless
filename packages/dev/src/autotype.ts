@@ -1,9 +1,8 @@
-import * as path from "node:path"
-
 import ts from "typescript"
 
 import type { Config } from "./config"
 import { noext } from "./utils"
+import { typegenPath } from "./typegen"
 
 type Splice = [number, string]
 
@@ -22,13 +21,8 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
     true,
   )
 
-  const typegenSource = path.join(
-    config.appDirectory,
-    ".typegen",
-    path.relative(config.appDirectory, filepath),
-  )
   const splices: Splice[] = [
-    [0, `import * as T from "${noext(typegenSource)}"\n\n`],
+    [0, `import * as T from "${noext(typegenPath(config, filepath))}"\n\n`],
   ]
   sourceFile.statements.forEach((stmt) => {
     if (ts.isExportAssignment(stmt)) {

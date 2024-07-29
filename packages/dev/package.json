@@ -1,15 +1,16 @@
 {
   "private": true,
   "name": "@lossless/dev",
+  "type": "module",
   "bin": {
     "lossless": "./bin.js"
   },
   "exports": {
     "autotype": {
-      "require": "./dist/autotype.js"
+      "require": "./dist/autotype.cjs"
     },
     "typegen": {
-      "require": "./dist/typegen.js"
+      "require": "./dist/typegen.cjs"
     }
   },
   "files": [

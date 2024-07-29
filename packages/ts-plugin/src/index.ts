@@ -18,6 +18,7 @@ function init(modules: { typescript: TS }) {
     const ls = info.languageService
     decorateGetDefinition(ls, info, ts)
     decorateHover(ls, info, ts)
+    decorateSemanticDiagnostics(ls, info, ts)
     return ls
   }
 
@@ -181,6 +182,38 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
   return {
     languageService,
     languageServiceHost,
+  }
+}
+
+// semantic diagnostics
+// ----------------------------------------------------------------------------
+
+function decorateSemanticDiagnostics(
+  ls: ts.LanguageService,
+  info: ts.server.PluginCreateInfo,
+  ts: TS,
+) {
+  info.project.projectService.logger.info(
+    `[ts-plugin] decorateSemanticDiagnostics`,
+  )
+  const getSemanticDiagnostics = ls.getSemanticDiagnostics
+  ls.getSemanticDiagnostics = (fileName: string) => {
+    const virtual = getVirtualLanguageService(info, ts)
+    if (!virtual) return getSemanticDiagnostics(fileName)
+
+    const route = virtual.languageServiceHost.getAutotypedRoute(fileName)
+    if (!route) return getSemanticDiagnostics(fileName)
+
+    const diagnostics: ts.Diagnostic[] = []
+    for (let diagnostic of virtual.languageService.getSemanticDiagnostics(
+      fileName,
+    )) {
+      if (diagnostic.start) {
+        diagnostic.start = route.autotyped.toOriginalIndex(diagnostic.start)
+      }
+      diagnostics.push(diagnostic)
+    }
+    return diagnostics
   }
 }
 

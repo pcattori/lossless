@@ -2,8 +2,8 @@
   "private": true,
   "name": "@lossless/dev",
   "exports": {
-    ".": {
-      "require": "./dist/index.js"
+    "autotype": {
+      "require": "./dist/autotype.js"
     }
   },
   "scripts": {

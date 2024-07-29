@@ -17,6 +17,7 @@ function init(modules: { typescript: TS }) {
     info.project.projectService.logger.info("[ts-plugin] setup")
     const ls = info.languageService
     decorateGetDefinition(ls, info, ts)
+    decorateHover(ls, info, ts)
     return ls
   }
 
@@ -180,6 +181,39 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
   return {
     languageService,
     languageServiceHost,
+  }
+}
+
+// hover
+// ----------------------------------------------------------------------------
+
+function decorateHover(
+  ls: ts.LanguageService,
+  info: ts.server.PluginCreateInfo,
+  ts: TS,
+) {
+  info.project.projectService.logger.info(`[ts-plugin] decorateHover`)
+  const getQuickInfoAtPosition = ls.getQuickInfoAtPosition
+  ls.getQuickInfoAtPosition = (fileName: string, position: number) => {
+    const virtual = getVirtualLanguageService(info, ts)
+    if (!virtual) return getQuickInfoAtPosition(fileName, position)
+
+    const route = virtual.languageServiceHost.getAutotypedRoute(fileName)
+    if (!route) return getQuickInfoAtPosition(fileName, position)
+
+    const virtualPos = route.autotyped.toSplicedIndex(position)
+    const quickinfo = virtual.languageService.getQuickInfoAtPosition(
+      fileName,
+      virtualPos,
+    )
+    if (!quickinfo) return getQuickInfoAtPosition(fileName, position)
+    return {
+      ...quickinfo,
+      textSpan: {
+        ...quickinfo.textSpan,
+        start: route.autotyped.toOriginalIndex(quickinfo.textSpan.start),
+      },
+    }
   }
 }
 

@@ -26,7 +26,7 @@ function init(modules: { typescript: TS }) {
 }
 export = init
 
-// virtual
+// autotype
 // ----------------------------------------------------------------------------
 
 type RouteModule = {
@@ -35,21 +35,17 @@ type RouteModule = {
   autotyped: AutotypedRoute
 }
 
-type VirtualLanguageServiceHost = {
-  getAutotypedRoute: (fileName: string) => RouteModule | undefined
-}
-
 const FORCE_UPDATE_VERSION = "FORCE_UPDATE_VERSION"
 
 const CACHE = new WeakMap<
   ts.server.PluginCreateInfo,
   {
     languageService: ts.LanguageService
-    languageServiceHost: ts.LanguageServiceHost & VirtualLanguageServiceHost
+    getRoute: (fileName: string) => RouteModule | undefined
   } | null
 >()
 
-function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
+function getAutotypeLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
   const cached = CACHE.get(info)
   if (cached) return cached
 
@@ -59,12 +55,12 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
 
   const host = info.languageServiceHost
 
-  class VirtualLanguageServiceHost implements ts.LanguageServiceHost {
+  class AutotypeLanguageServiceHost implements ts.LanguageServiceHost {
     private routes: Record<string, RouteModule> = {}
 
     constructor() {}
 
-    // TODO: Q: are these needed? do they just "silence" the virtual host?
+    // TODO: Q: are these needed? do they just "silence" the autotype host?
     // log() {}
     // trace() {}
     // error() {}
@@ -128,7 +124,7 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       return this.routes[fileName] !== undefined || host.fileExists(fileName)
     }
 
-    private _getRouteIfUpToDate(fileName: string) {
+    getRouteIfUpToDate(fileName: string) {
       info.project.projectService.logger.info(
         `[ts-plugin] getRouteScriptSnapshotIfUpToDate ${fileName}`,
       )
@@ -144,7 +140,7 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       return route
     }
 
-    private _upsertRouteFile(fileName: string) {
+    upsertRouteFile(fileName: string) {
       info.project.projectService.logger.info(
         `[ts-plugin] upsertRouteFile ${fileName}`,
       )
@@ -168,21 +164,20 @@ function getVirtualLanguageService(info: ts.server.PluginCreateInfo, ts: TS) {
       }
       return this.routes[fileName]!
     }
-
-    getAutotypedRoute(fileName: string) {
-      const route =
-        this._getRouteIfUpToDate(fileName) ?? this._upsertRouteFile(fileName)
-      return route
-    }
   }
 
-  const languageServiceHost = new VirtualLanguageServiceHost()
-  const languageService = ts.createLanguageService(languageServiceHost)
-  CACHE.set(info, { languageService, languageServiceHost })
-  return {
-    languageService,
-    languageServiceHost,
+  const autotypeHost = new AutotypeLanguageServiceHost()
+  function getRoute(fileName: string) {
+    const route =
+      autotypeHost.getRouteIfUpToDate(fileName) ??
+      autotypeHost.upsertRouteFile(fileName)
+    return route
   }
+
+  const languageService = ts.createLanguageService(autotypeHost)
+  const result = { languageService, getRoute }
+  CACHE.set(info, result)
+  return result
 }
 
 // semantic diagnostics
@@ -198,14 +193,14 @@ function decorateSemanticDiagnostics(
   )
   const getSemanticDiagnostics = ls.getSemanticDiagnostics
   ls.getSemanticDiagnostics = (fileName: string) => {
-    const virtual = getVirtualLanguageService(info, ts)
-    if (!virtual) return getSemanticDiagnostics(fileName)
+    const autotype = getAutotypeLanguageService(info, ts)
+    if (!autotype) return getSemanticDiagnostics(fileName)
 
-    const route = virtual.languageServiceHost.getAutotypedRoute(fileName)
+    const route = autotype.getRoute(fileName)
     if (!route) return getSemanticDiagnostics(fileName)
 
     const diagnostics: ts.Diagnostic[] = []
-    for (let diagnostic of virtual.languageService.getSemanticDiagnostics(
+    for (let diagnostic of autotype.languageService.getSemanticDiagnostics(
       fileName,
     )) {
       let start = diagnostic.start
@@ -228,19 +223,19 @@ function decorateHover(
 ) {
   info.project.projectService.logger.info(`[ts-plugin] decorateHover`)
   const getQuickInfoAtPosition = ls.getQuickInfoAtPosition
-  ls.getQuickInfoAtPosition = (fileName: string, position: number) => {
-    const virtual = getVirtualLanguageService(info, ts)
-    if (!virtual) return getQuickInfoAtPosition(fileName, position)
+  ls.getQuickInfoAtPosition = (fileName: string, index: number) => {
+    const autotype = getAutotypeLanguageService(info, ts)
+    if (!autotype) return getQuickInfoAtPosition(fileName, index)
 
-    const route = virtual.languageServiceHost.getAutotypedRoute(fileName)
-    if (!route) return getQuickInfoAtPosition(fileName, position)
+    const route = autotype.getRoute(fileName)
+    if (!route) return getQuickInfoAtPosition(fileName, index)
 
-    const virtualPos = route.autotyped.toSplicedIndex(position)
-    const quickinfo = virtual.languageService.getQuickInfoAtPosition(
+    const splicedIndex = route.autotyped.toSplicedIndex(index)
+    const quickinfo = autotype.languageService.getQuickInfoAtPosition(
       fileName,
-      virtualPos,
+      splicedIndex,
     )
-    if (!quickinfo) return getQuickInfoAtPosition(fileName, position)
+    if (!quickinfo) return getQuickInfoAtPosition(fileName, index)
     return {
       ...quickinfo,
       textSpan: {
@@ -261,45 +256,26 @@ function decorateGetDefinition(
 ) {
   info.project.projectService.logger.info(`[ts-plugin] decorateGetDefinition`)
   const getDefinitionAndBoundSpan = ls.getDefinitionAndBoundSpan
-  ls.getDefinitionAndBoundSpan = (fileName, position) => {
-    const definition = getDefinitionAndBoundSpan(fileName, position)
-    if (!definition?.definitions) {
-      return getRouteDefinitions(ts, info, fileName, position)
+  ls.getDefinitionAndBoundSpan = (fileName, index) => {
+    const autotype = getAutotypeLanguageService(info, ts)
+    if (!autotype) return getDefinitionAndBoundSpan(fileName, index)
+
+    const route = autotype.getRoute(fileName)
+    if (!route) return getDefinitionAndBoundSpan(fileName, index)
+
+    const splicedIndex = route.autotyped.toSplicedIndex(index)
+    const definitions = autotype.languageService.getDefinitionAndBoundSpan(
+      fileName,
+      splicedIndex,
+    )
+    if (!definitions) return getDefinitionAndBoundSpan(fileName, index)
+    return {
+      ...definitions,
+      textSpan: {
+        ...definitions.textSpan,
+        start: route.autotyped.toOriginalIndex(definitions.textSpan.start),
+      },
     }
-    return definition
-  }
-}
-
-function getRouteDefinitions(
-  ts: TS,
-  info: ts.server.PluginCreateInfo,
-  fileName: string,
-  position: number,
-) {
-  info.project.projectService.logger.info(
-    `[ts-plugin] getRouteDefinitions ${fileName}`,
-  )
-  const virtual = getVirtualLanguageService(info, ts)
-  if (!virtual) return
-
-  const route = virtual.languageServiceHost.getAutotypedRoute(fileName)
-  if (!route) return
-
-  const virtualPos = route.autotyped.toSplicedIndex(position)
-  const definitions = virtual.languageService.getDefinitionAndBoundSpan(
-    fileName,
-    virtualPos,
-  )
-  if (!definitions) return
-  // Assumption: This is only called when the original definitions didn't turn up anything.
-  // Therefore we are called on things like export function load ({ fetch }) .
-  // This means the textSpan needs conversion but none of the definitions because they are all referencing other files.
-  return {
-    ...definitions,
-    textSpan: {
-      ...definitions.textSpan,
-      start: route.autotyped.toOriginalIndex(definitions.textSpan.start),
-    },
   }
 }
 

@@ -7,7 +7,7 @@ export type Route = {
   file: string
 }
 
-export async function routes(config: Config): Promise<Route[]> {
+export async function getRoutes(config: Config): Promise<Route[]> {
   let { default: routes } = await import(
     path.join(config.appDirectory, "routes.mjs")
   )

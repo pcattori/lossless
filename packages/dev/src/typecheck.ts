@@ -1,12 +1,13 @@
 import ts from "typescript"
 import * as path from "node:path"
 
-import * as Config from "./config"
-import { annotateRouteExports } from "@lossless/dev"
+import { autotypeRoute } from "./autotype"
+import type { Config } from "./config"
+import { getRoutes } from "./routes"
 
-function parseTsconfig(): ts.ParsedCommandLine {
+function parseTsconfig(config: Config): ts.ParsedCommandLine {
   const configPath = ts.findConfigFile(
-    Config.appDirectory,
+    config.appDirectory,
     ts.sys.fileExists,
     "tsconfig.json",
   )
@@ -22,22 +23,22 @@ function parseTsconfig(): ts.ParsedCommandLine {
   )
 }
 
-export default async function typecheck() {
-  const routes = await Config.routes()
+export default async function typecheck(config: Config) {
+  const routes = await getRoutes(config)
   const routePaths = new Set(routes.map((r) => r.file))
   function isRoute(filepath: string) {
-    let rel = path.relative(Config.appDirectory, filepath)
+    let rel = path.relative(config.appDirectory, filepath)
     if (path.isAbsolute(rel) || rel.startsWith("..")) return false
     return routePaths.has(rel)
   }
 
-  const { fileNames, options } = parseTsconfig()
+  const { fileNames, options } = parseTsconfig(config)
   const host = ts.createCompilerHost(options)
   const originalReadFile = host.readFile
   host.readFile = (fileName: string) => {
     const content = originalReadFile(fileName)
     if (content && isRoute(fileName)) {
-      return annotateRouteExports(Config, fileName, content).edited
+      return autotypeRoute(config, fileName, content).code()
     }
     return content
   }
@@ -48,7 +49,7 @@ export default async function typecheck() {
     const formattedDiagnostics = ts.formatDiagnosticsWithColorAndContext(
       diagnostics,
       {
-        getCurrentDirectory: () => Config.appDirectory,
+        getCurrentDirectory: () => config.appDirectory,
         getCanonicalFileName: (fileName) => fileName,
         getNewLine: () => ts.sys.newLine,
       },

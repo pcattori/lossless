@@ -7,6 +7,12 @@ import type { Route } from "./routes"
 import type { Config } from "./config"
 import { noext } from "./utils"
 
+export function typegenPath(config: Config, route: Route): string {
+  let rel = path.relative(config.appDirectory, route.file)
+  let dest = path.join(config.appDirectory, ".lossless/typegen", rel)
+  return dest
+}
+
 export async function typegen(config: Config, route: Route) {
   let params = paramsType(route)
 

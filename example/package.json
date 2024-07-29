@@ -9,7 +9,7 @@
     "lossless": "workspace:*"
   },
   "devDependencies": {
-    "@lossless/cli": "workspace:*",
+    "@lossless/dev": "workspace:*",
     "@lossless/ts-plugin": "workspace:*",
     "@types/node": "^20.14.9",
     "typescript": "^5.5.3"

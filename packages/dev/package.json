@@ -1,6 +1,9 @@
 {
   "private": true,
   "name": "@lossless/dev",
+  "bin": {
+    "lossless": "./bin.js"
+  },
   "exports": {
     "autotype": {
       "require": "./dist/autotype.js"
@@ -9,7 +12,12 @@
       "require": "./dist/typegen.js"
     }
   },
+  "files": [
+    "bin.js",
+    "dist/"
+  ],
   "dependencies": {
+    "cac": "^6.7.14",
     "es-module-lexer": "^1.5.4"
   },
   "scripts": {

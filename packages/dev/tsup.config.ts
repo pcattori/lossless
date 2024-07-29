@@ -3,8 +3,8 @@ import { defineConfig } from "tsup"
 export default defineConfig([
   {
     clean: true,
-    entry: ["./src/autotype.ts", "./src/typegen.ts"],
-    format: ["esm"],
+    entry: ["./src/index.ts"],
+    format: ["cjs", "esm"],
     target: "node18",
     dts: true,
     external: ["typescript"],

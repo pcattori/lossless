@@ -4,7 +4,13 @@
   "exports": {
     "autotype": {
       "require": "./dist/autotype.js"
+    },
+    "typegen": {
+      "require": "./dist/typegen.js"
     }
+  },
+  "dependencies": {
+    "es-module-lexer": "^1.5.4"
   },
   "scripts": {
     "build": "tsup",

@@ -10,11 +10,6 @@ type IsDefined<T> = Equal<T, undefined> extends true ? false : true
 
 interface AppLoadContext {}
 
-type ResponseStub = {
-  status: number | undefined
-  headers: Headers
-}
-
 type Serializable =
   | undefined
   | null
@@ -41,7 +36,6 @@ type LoaderArgs<Params> = {
   context: AppLoadContext
   request: Request
   params: Params
-  response: ResponseStub
 }
 
 export type ServerLoader<Params> = (args: LoaderArgs<Params>) => ServerData

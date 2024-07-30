@@ -1,10 +1,15 @@
 {
   "private": "true",
+  "name": "lossless",
   "scripts": {
-    "build": "pnpm -r build",
-    "check": "pnpm -r check"
+    "build": "turbo build",
+    "dev": "turbo dev"
   },
   "prettier": {
     "semi": false
-  }
+  },
+  "devDependencies": {
+    "turbo": "^2.0.9"
+  },
+  "packageManager": "pnpm@9.0.6"
 }

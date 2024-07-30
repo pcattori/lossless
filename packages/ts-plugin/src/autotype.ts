@@ -1,5 +1,3 @@
-import * as path from "node:path"
-
 import ts from "typescript"
 type TS = typeof ts
 
@@ -22,15 +20,12 @@ const CACHE = new WeakMap<
 >()
 
 export function getAutotypeLanguageService(
+  config: Config,
   info: ts.server.PluginCreateInfo,
   ts: TS,
 ) {
   const cached = CACHE.get(info)
   if (cached) return cached
-
-  const appDirectory = getProjectDirectory(info.project)
-  if (!appDirectory) return
-  const config: Config = { appDirectory }
 
   const host = info.languageServiceHost
 
@@ -136,20 +131,4 @@ export function getAutotypeLanguageService(
   const result = { languageService, getRoute }
   CACHE.set(info, result)
   return result
-}
-
-function getProjectDirectory(project: ts.server.Project) {
-  const compilerOptions = project.getCompilerOptions()
-
-  if (typeof compilerOptions.configFilePath === "string") {
-    return path.dirname(compilerOptions.configFilePath)
-  }
-
-  const packageJsonPath = path.join(
-    project.getCurrentDirectory(),
-    "package.json",
-  )
-  return project.fileExists(packageJsonPath)
-    ? project.getCurrentDirectory()
-    : undefined
 }

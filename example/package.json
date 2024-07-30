@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "check": "lossless typecheck",
+    "typegen": "lossless typegen",
     "tsc": "tsc"
   },
   "dependencies": {

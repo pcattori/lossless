@@ -14,7 +14,7 @@ export function typegenPath(config: Config, routeFile: string): string {
 }
 
 export async function typegen(config: Config, route: Route) {
-  let params = paramsType(route)
+  let paramsType = getParamsType(route)
 
   let file = path.join(config.appDirectory, route.file)
   let code = await fs.readFile(file, "utf8")
@@ -22,17 +22,19 @@ export async function typegen(config: Config, route: Route) {
 
   return [
     `import type { ReactNode } from "react"`,
-    `import type * as T from "lossless"`,
+    `import type * as Lossless from "lossless"`,
     "",
-    params,
+    "type Pretty<T> = { [K in keyof T]: T[K] } & {}",
+    "",
+    `type Params = ${paramsType}`,
     "",
     `type LoaderArgs = {`,
-    `  context: T.AppLoadContext`,
+    `  context: Lossless.AppLoadContext`,
     `  request: Request`,
-    `  params: Params`,
+    `  params: Pretty<Params>`,
     `}`,
     "",
-    `export type ServerLoader = (args: LoaderArgs) => T.ServerData`,
+    `export type ServerLoader = (args: LoaderArgs) => Lossless.ServerData`,
     exports.includes("serverLoader")
       ? [
           `import type { serverLoader } from "${noext(file)}"`,
@@ -51,28 +53,28 @@ export async function typegen(config: Config, route: Route) {
     "",
     `type ClientLoaderHydrate = false`, // TODO
     "",
-    `export type HydrateFallback = (args: { params: Params }) => ReactNode`,
+    `export type HydrateFallback = (args: { params: Pretty<Params> }) => ReactNode`,
     `type HasHydrateFallback = ${exports.includes("HydrateFallback")}`,
     "",
-    `type LoaderData = T.LoaderData<`,
+    `type LoaderData = Lossless.LoaderData<`,
     `  ServerLoaderData,`,
     `  ClientLoaderData,`,
     `  ClientLoaderHydrate,`,
     `  HasHydrateFallback`,
     `>`,
     "",
-    `export type Component = (args: { params: Params, loaderData: LoaderData }) => ReactNode`,
+    `export type Component = (args: { params: Pretty<Params>, loaderData: LoaderData }) => ReactNode`,
   ].join("\n")
 }
 
-function paramsType(route: Route): string {
+function getParamsType(route: Route): string {
   let params = parseParams(route)
   let paramTypes = params.map(([param, optional]) => {
     let type = `  ${param}: string`
     if (optional) type += ` | undefined`
     return type
   })
-  return ["type Params = {", ...paramTypes, "}"].join("\n")
+  return ["{", ...paramTypes, "}"].join("\n")
 }
 
 type Params = Array<readonly [string, boolean]>

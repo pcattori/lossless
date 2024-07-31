@@ -9,7 +9,12 @@ import { noext } from "./utils"
 
 export function typegenPath(config: Config, routeFile: string): string {
   let rel = path.relative(config.appDirectory, routeFile)
-  let dest = path.join(config.appDirectory, ".lossless/typegen", rel)
+  let dest = path.join(
+    config.appDirectory,
+    ".lossless/typegen",
+    path.dirname(rel),
+    "$types." + path.basename(rel),
+  )
   return dest
 }
 

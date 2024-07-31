@@ -17,6 +17,9 @@ importers:
       lossless:
         specifier: workspace:*
         version: link:../packages/lossless
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
     devDependencies:
       '@lossless/dev':
         specifier: workspace:*
@@ -27,6 +30,9 @@ importers:
       '@types/node':
         specifier: ^20.14.9
         version: 20.14.11
+      '@types/react':
+        specifier: ^18.3.3
+        version: 18.3.3
       typescript:
         specifier: ^5.5.3
         version: 5.5.3
@@ -51,13 +57,6 @@ importers:
         version: 5.5.3
 
   packages/lossless:
-    dependencies:
-      react:
-        specifier: ^18.3.1
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.3.1
-        version: 18.3.1(react@18.3.1)
     devDependencies:
       '@types/node':
         specifier: ^20.14.9
@@ -68,6 +67,12 @@ importers:
       '@types/react-dom':
         specifier: ^18.3.0
         version: 18.3.0
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
       tsup:
         specifier: ^8.1.2
         version: 8.2.0(tsx@4.16.2)(typescript@5.5.3)

@@ -21,11 +21,18 @@ export async function typegen(config: Config, route: Route) {
   let exports = esModuleLexer(code)[1].map((x) => x.n)
 
   return [
-    `import * as T from "lossless"`,
+    `import type { ReactNode } from "react"`,
+    `import type * as T from "lossless"`,
     "",
     params,
     "",
-    `export type ServerLoader = T.ServerLoader<Params>`,
+    `type LoaderArgs = {`,
+    `  context: T.AppLoadContext`,
+    `  request: Request`,
+    `  params: Params`,
+    `}`,
+    "",
+    `export type ServerLoader = (args: LoaderArgs) => T.ServerData`,
     exports.includes("serverLoader")
       ? [
           `import type { serverLoader } from "${noext(file)}"`,
@@ -33,7 +40,8 @@ export async function typegen(config: Config, route: Route) {
         ].join("\n")
       : `type ServerLoaderData = undefined`,
     "",
-    `export type ClientLoader = T.ClientLoader<Params, ServerLoaderData>`,
+
+    `export type ClientLoader = (args: LoaderArgs & { serverLoader: () => Promise<ServerLoaderData> }) => unknown`,
     exports.includes("clientLoader")
       ? [
           `import type { clientLoader } from "${noext(file)}"`,
@@ -43,7 +51,7 @@ export async function typegen(config: Config, route: Route) {
     "",
     `type ClientLoaderHydrate = false`, // TODO
     "",
-    `export type HydrateFallback = T.HydrateFallback<Params>`,
+    `export type HydrateFallback = (args: { params: Params }) => ReactNode`,
     `type HasHydrateFallback = ${exports.includes("HydrateFallback")}`,
     "",
     `type LoaderData = T.LoaderData<`,
@@ -53,7 +61,7 @@ export async function typegen(config: Config, route: Route) {
     `  HasHydrateFallback`,
     `>`,
     "",
-    `export type Component = T.Component<Params, LoaderData>`,
+    `export type Component = (args: { params: Params, loaderData: LoaderData }) => ReactNode`,
   ].join("\n")
 }
 

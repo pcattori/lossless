@@ -1,5 +1,3 @@
-import type { ReactNode } from "react"
-
 // prettier-ignore
 type Equal<X, Y> =
   (<T>() => T extends X ? 1 : 2) extends
@@ -8,7 +6,7 @@ type Equal<X, Y> =
 type MaybePromise<T> = T | Promise<T>
 type IsDefined<T> = Equal<T, undefined> extends true ? false : true
 
-interface AppLoadContext {}
+export interface AppLoadContext {}
 
 type Serializable =
   | undefined
@@ -28,25 +26,9 @@ type Serializable =
   | Set<Serializable>
   | Promise<Serializable>
 
-type ServerData = MaybePromise<
+export type ServerData = MaybePromise<
   Exclude<Serializable, undefined | Promise<Serializable>>
 >
-
-type LoaderArgs<Params> = {
-  context: AppLoadContext
-  request: Request
-  params: Params
-}
-
-export type ServerLoader<Params> = (args: LoaderArgs<Params>) => ServerData
-
-export type ClientLoader<Params, ServerLoaderData> = (
-  args: LoaderArgs<Params> & {
-    serverLoader: () => Promise<ServerLoaderData>
-  },
-) => unknown
-
-export type HydrateFallback<Params> = (args: { params: Params }) => ReactNode
 
 // prettier-ignore
 export type LoaderData<
@@ -66,9 +48,3 @@ export type LoaderData<
   :
   IsDefined<ServerLoaderData> extends true ? ServerLoaderData :
   undefined
-
-export type Component<Params, LoaderData> = (args: {
-  params: Params
-  loaderData: LoaderData
-  // TODO: actionData
-}) => ReactNode

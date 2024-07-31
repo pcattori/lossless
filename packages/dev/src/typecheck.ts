@@ -24,7 +24,7 @@ function parseTsconfig(config: Config): ts.ParsedCommandLine {
 }
 
 export default async function typecheck(config: Config) {
-  const routes = await getRoutes(config)
+  const routes = getRoutes(config)
   const routePaths = new Set(routes.map((r) => r.file))
   function isRoute(filepath: string) {
     let rel = path.relative(config.appDirectory, filepath)

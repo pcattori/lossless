@@ -1,7 +1,14 @@
-import ts from "typescript"
-type TS = typeof ts
+import * as path from "node:path"
 
-import { autotypeRoute, type AutotypedRoute, type Config } from "@lossless/dev"
+import ts from "typescript"
+import {
+  autotypeRoute,
+  getRoutes,
+  type AutotypedRoute,
+  type Config,
+} from "@lossless/dev"
+
+type TS = typeof ts
 
 type RouteModule = {
   snapshot: ts.IScriptSnapshot
@@ -26,6 +33,15 @@ export function getAutotypeLanguageService(
 ) {
   const cached = CACHE.get(info)
   if (cached) return cached
+
+  const ROUTE_PATHS = new Set(
+    getRoutes(config).map((route) =>
+      path.join(config.appDirectory, route.file),
+    ),
+  )
+  function isRoute(fileName: string): boolean {
+    return ROUTE_PATHS.has(fileName)
+  }
 
   const host = info.languageServiceHost
 
@@ -97,6 +113,7 @@ export function getAutotypeLanguageService(
     }
 
     upsertRouteFile(fileName: string) {
+      if (!isRoute(fileName)) return
       const sourceFile = info.languageService
         .getProgram()
         ?.getSourceFile(fileName)

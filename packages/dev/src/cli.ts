@@ -25,7 +25,7 @@ cli.parse(process.argv, { run: false })
 cli.runMatchedCommand()
 
 async function typegenFiles(config: Config) {
-  const routes = await getRoutes(config)
+  const routes = getRoutes(config)
   await Promise.all(
     routes.map(async (route) => {
       const code = await typegen(config, route)

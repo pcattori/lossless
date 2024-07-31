@@ -24,6 +24,12 @@
 
     "jsx": "react-jsx",
 
-    "plugins": [{ "name": "@lossless/ts-plugin" }],
-  }
+    "plugins": [{ "name": "@lossless/ts-plugin" }]
+  },
+  "include": [
+    "./routes/**/*.ts",
+    "./routes/**/*.tsx",
+    "./.lossless/typegen/**/*.tsx"
+  ],
+  "exclude": ["./node_modules/**"]
 }

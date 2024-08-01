@@ -6,11 +6,11 @@ import { typegenPath } from "./typegen"
 
 type Splice = [number, string]
 
-const EXPORT_TO_TYPE: Record<string, string | undefined> = {
-  serverLoader: "ServerLoader",
-  clientLoader: "ClientLoader",
+const EXPORT_TO_TYPE_CONSTRAINT: Record<string, string | undefined> = {
+  serverLoader: "ServerLoaderConstraint",
+  clientLoader: "ClientLoaderConstraint",
   // TODO clientLoaderHydrate
-  HydrateFallback: "HydrateFallback",
+  HydrateFallback: "HydrateFallbackConstraint",
 }
 
 export function autotypeRoute(config: Config, filepath: string, code: string) {
@@ -36,7 +36,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       splices.push([stmt.expression.getStart(sourceFile), "("])
       splices.push([
         stmt.expression.getEnd(),
-        ") satisfies $autotype.Component",
+        ") satisfies $autotype.ComponentConstraint",
       ])
     } else if (ts.isVariableStatement(stmt)) {
       // export const loader = |>(<|() => {}|>)satisfies <type><|
@@ -44,7 +44,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       for (let decl of stmt.declarationList.declarations) {
         if (!ts.isIdentifier(decl.name)) continue
         if (decl.initializer === undefined) continue
-        let type = EXPORT_TO_TYPE[decl.name.text]
+        let type = EXPORT_TO_TYPE_CONSTRAINT[decl.name.text]
         if (!type) continue
         splices.push([decl.initializer.getStart(sourceFile), "("])
         splices.push([
@@ -57,7 +57,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       let exp = exported(stmt)
       if (!exp) return
       if (!stmt.name) return
-      let type = EXPORT_TO_TYPE[stmt.name.text]
+      let type = EXPORT_TO_TYPE_CONSTRAINT[stmt.name.text]
       if (!type) return
       if (!stmt.body) return
       splices.push([exp.getEnd() + 1, `const ${stmt.name.text} = (`])

@@ -38,7 +38,7 @@ function typegen(route: Route) {
     `import type * as Lossless from "lossless"`,
     "",
     "type Pretty<T> = { [K in keyof T]: T[K] } & {}",
-    "export type IsAny<T> = 0 extends (1 & T) ? true : false",
+    "type IsAny<T> = 0 extends (1 & T) ? true : false",
     "",
     `type Params = ${paramsType}`,
     "",

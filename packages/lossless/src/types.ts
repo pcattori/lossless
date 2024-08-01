@@ -48,3 +48,11 @@ export type LoaderData<
   :
   IsDefined<ServerLoaderData> extends true ? ServerLoaderData :
   undefined
+
+// prettier-ignore
+export type ActionData<ServerActionData, ClientActionData> = Awaited<
+  [IsDefined<ServerActionData>, IsDefined<ClientActionData>] extends [true, true] ? ServerActionData | ClientActionData :
+  IsDefined<ClientActionData> extends true ? ClientActionData :
+  IsDefined<ServerActionData> extends true ? ServerActionData :
+  undefined
+>

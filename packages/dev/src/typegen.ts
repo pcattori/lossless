@@ -16,7 +16,7 @@ export function typegenPath(config: Config, routeFile: string): string {
 }
 
 export async function typegen(route: Route) {
-  let $typesImport = "./" + noext(path.basename(route.file))
+  let routePath = "./" + noext(path.basename(route.file))
   let paramsType = getParamsType(route)
   return [
     `import type { ReactNode } from "react"`,
@@ -35,19 +35,19 @@ export async function typegen(route: Route) {
     "",
     `export type ServerLoaderConstraint = (args: LoaderArgs) => Lossless.ServerData`,
     `// @ts-ignore`,
-    `import type { serverLoader } from "${$typesImport}"`,
+    `import type { serverLoader } from "${routePath}"`,
     `type ServerLoaderData = IsAny<typeof serverLoader> extends true ? undefined : Awaited<ReturnType<typeof serverLoader>>`,
     "",
     `export type ClientLoaderConstraint = (args: LoaderArgs & { serverLoader: () => Promise<ServerLoaderData> }) => unknown`,
     `// @ts-ignore`,
-    `import type { clientLoader } from "${$typesImport}"`,
+    `import type { clientLoader } from "${routePath}"`,
     `type ClientLoaderData = IsAny<typeof clientLoader> extends true ? undefined : Awaited<ReturnType<typeof clientLoader>>`,
     "",
     `type ClientLoaderHydrate = false`, // TODO
     "",
     `export type HydrateFallbackConstraint = (args: { params: Pretty<Params> }) => ReactNode`,
     `// @ts-ignore`,
-    `import type { HydrateFallback } from "${$typesImport}"`,
+    `import type { HydrateFallback } from "${routePath}"`,
     `type HasHydrateFallback = IsAny<typeof HydrateFallback> extends true ? false : true`,
     "",
     `type LoaderData = Lossless.LoaderData<`,

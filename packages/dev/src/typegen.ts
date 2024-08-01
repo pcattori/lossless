@@ -76,6 +76,8 @@ export async function typegen(route: Route) {
     `type ActionData = Lossless.ActionData<ServerActionData, ClientActionData>`,
     "",
     `export type ComponentConstraint = (args: { params: Pretty<Params>, loaderData: LoaderData, actionData?: ActionData }) => ReactNode`,
+    "",
+    `export type ErrorBoundaryConstraint = (args: { params: Pretty<Params>, error: unknown, loader: LoaderData, actionData?: ActionData }) => ReactNode`,
   ].join("\n")
 }
 

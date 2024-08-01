@@ -13,6 +13,7 @@ const EXPORT_TO_TYPE_CONSTRAINT: Record<string, string | undefined> = {
   HydrateFallback: "HydrateFallbackConstraint",
   serverAction: "ServerActionConstraint",
   clientAction: "ClientActionConstraint",
+  ErrorBoundary: "ErrorBoundaryConstraint",
 }
 
 export function autotypeRoute(config: Config, filepath: string, code: string) {

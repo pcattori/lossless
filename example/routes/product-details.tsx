@@ -6,4 +6,3 @@ export default ({ params, loaderData }) => {
   let a: string = loaderData
   return `Hello, ${params.id}!`
 }
-

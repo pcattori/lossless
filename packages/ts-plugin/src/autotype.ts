@@ -1,9 +1,12 @@
+import * as fs from "node:fs"
 import * as path from "node:path"
 
 import ts from "typescript"
 import {
   autotypeRoute,
   getRoutes,
+  typegen,
+  typegenPath,
   type AutotypedRoute,
   type Config,
 } from "@lossless/dev"
@@ -34,14 +37,12 @@ export function getAutotypeLanguageService(
   const cached = CACHE.get(info)
   if (cached) return cached
 
-  const ROUTE_PATHS = new Set(
-    getRoutes(config).map((route) =>
+  const ROUTES_BY_FILE = new Map(
+    getRoutes(config).map((route) => [
       path.join(config.appDirectory, route.file),
-    ),
+      route,
+    ]),
   )
-  function isRoute(fileName: string): boolean {
-    return ROUTE_PATHS.has(fileName)
-  }
 
   const host = info.languageServiceHost
 
@@ -113,7 +114,8 @@ export function getAutotypeLanguageService(
     }
 
     upsertRouteFile(fileName: string) {
-      if (!isRoute(fileName)) return
+      const route = ROUTES_BY_FILE.get(fileName)
+      if (!route) return
       const sourceFile = info.languageService
         .getProgram()
         ?.getSourceFile(fileName)
@@ -123,6 +125,14 @@ export function getAutotypeLanguageService(
       const autotyped = autotypeRoute(config, fileName, code)
       const snapshot = ts.ScriptSnapshot.fromString(autotyped.code())
       snapshot.getChangeRange = (_) => undefined
+
+      const $typesPath = typegenPath(config, fileName)
+      if (!fs.existsSync($typesPath)) {
+        typegen(route).then(async (content) => {
+          fs.mkdirSync(path.dirname($typesPath), { recursive: true })
+          fs.writeFileSync($typesPath, content)
+        })
+      }
 
       this.routes[fileName] = {
         version:

@@ -18,8 +18,7 @@
     "typescript": "^5.5.3"
   },
   "dependencies": {
-    "cac": "^6.7.14",
-    "es-module-lexer": "^1.5.4"
+    "cac": "^6.7.14"
   },
   "scripts": {
     "build": "tsup",

@@ -1,7 +1,4 @@
-import * as fs from "node:fs/promises"
 import * as path from "node:path"
-
-import { parse as esModuleLexer } from "es-module-lexer"
 
 import type { Route } from "./routes"
 import type { Config } from "./config"
@@ -19,17 +16,14 @@ export function typegenPath(config: Config, routeFile: string): string {
 }
 
 export async function typegen(config: Config, route: Route) {
-  let paramsType = getParamsType(route)
-
   let file = path.join(config.appDirectory, route.file)
-  let code = await fs.readFile(file, "utf8")
-  let exports = esModuleLexer(code)[1].map((x) => x.n)
-
+  let paramsType = getParamsType(route)
   return [
     `import type { ReactNode } from "react"`,
     `import type * as Lossless from "lossless"`,
     "",
     "type Pretty<T> = { [K in keyof T]: T[K] } & {}",
+    "export type IsAny<T> = 0 extends (1 & T) ? true : false",
     "",
     `type Params = ${paramsType}`,
     "",
@@ -40,26 +34,21 @@ export async function typegen(config: Config, route: Route) {
     `}`,
     "",
     `export type ServerLoader = (args: LoaderArgs) => Lossless.ServerData`,
-    exports.includes("serverLoader")
-      ? [
-          `import type { serverLoader } from "${noext(file)}"`,
-          `type ServerLoaderData = Awaited<ReturnType<typeof serverLoader>>`,
-        ].join("\n")
-      : `type ServerLoaderData = undefined`,
+    `// @ts-ignore`,
+    `import type { serverLoader } from "${noext(file)}"`,
+    `type ServerLoaderData = IsAny<typeof serverLoader> extends true ? undefined : Awaited<ReturnType<typeof serverLoader>>`,
     "",
-
     `export type ClientLoader = (args: LoaderArgs & { serverLoader: () => Promise<ServerLoaderData> }) => unknown`,
-    exports.includes("clientLoader")
-      ? [
-          `import type { clientLoader } from "${noext(file)}"`,
-          `type ClientLoaderData = Awaited<ReturnType<typeof clientLoader>>`,
-        ].join("\n")
-      : `type ClientLoaderData = undefined`,
+    `// @ts-ignore`,
+    `import type { clientLoader } from "${noext(file)}"`,
+    `type ClientLoaderData = IsAny<typeof clientLoader> extends true ? undefined : Awaited<ReturnType<typeof clientLoader>>`,
     "",
     `type ClientLoaderHydrate = false`, // TODO
     "",
     `export type HydrateFallback = (args: { params: Pretty<Params> }) => ReactNode`,
-    `type HasHydrateFallback = ${exports.includes("HydrateFallback")}`,
+    `// @ts-ignore`,
+    `import type { HydrateFallback as _HydrateFallback } from "${noext(file)}"`,
+    `type HasHydrateFallback = IsAny<typeof _HydrateFallback> extends true ? false : true`,
     "",
     `type LoaderData = Lossless.LoaderData<`,
     `  ServerLoaderData,`,

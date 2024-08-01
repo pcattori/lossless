@@ -7,10 +7,10 @@ import { typegenPath } from "./typegen"
 type Splice = [number, string]
 
 const EXPORT_TO_TYPE: Record<string, string | undefined> = {
-  serverLoader: "T.ServerLoader",
-  clientLoader: "T.ClientLoader",
+  serverLoader: "ServerLoader",
+  clientLoader: "ClientLoader",
   // TODO clientLoaderHydrate
-  HydrateFallback: "T.HydrateFallback",
+  HydrateFallback: "HydrateFallback",
 }
 
 export function autotypeRoute(config: Config, filepath: string, code: string) {
@@ -22,7 +22,10 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
   )
 
   const splices: Splice[] = [
-    [0, `import * as T from "${noext(typegenPath(config, filepath))}"\n\n`],
+    [
+      0,
+      `import * as $autotype from "${noext(typegenPath(config, filepath))}"\n\n`,
+    ],
   ]
   sourceFile.statements.forEach((stmt) => {
     if (ts.isExportAssignment(stmt)) {
@@ -31,7 +34,10 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         throw Error(`Unexpected 'export  =' in '${filepath}'`)
       }
       splices.push([stmt.expression.getStart(sourceFile), "("])
-      splices.push([stmt.expression.getEnd(), ") satisfies T.Component"])
+      splices.push([
+        stmt.expression.getEnd(),
+        ") satisfies $autotype.Component",
+      ])
     } else if (ts.isVariableStatement(stmt)) {
       // export const loader = |>(<|() => {}|>)satisfies <type><|
       if (!exported(stmt)) return
@@ -41,7 +47,10 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         let type = EXPORT_TO_TYPE[decl.name.text]
         if (!type) continue
         splices.push([decl.initializer.getStart(sourceFile), "("])
-        splices.push([decl.initializer.getEnd(), `) satisfies ${type}`])
+        splices.push([
+          decl.initializer.getEnd(),
+          `) satisfies $autotype.${type}`,
+        ])
       }
     } else if (ts.isFunctionDeclaration(stmt)) {
       // export |>const loader = (<|function loader() {}|>) satisfies <type><|
@@ -52,7 +61,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       if (!type) return
       if (!stmt.body) return
       splices.push([exp.getEnd() + 1, `const ${stmt.name.text} = (`])
-      splices.push([stmt.body.getEnd(), `) satisfies ${type}`])
+      splices.push([stmt.body.getEnd(), `) satisfies $autotype.${type}`])
     }
   })
   return new AutotypedRoute(code, splices)

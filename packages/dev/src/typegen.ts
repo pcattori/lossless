@@ -27,6 +27,8 @@ export async function typegen(route: Route) {
     "",
     `type Params = ${paramsType}`,
     "",
+    `export type LinksConstraint = (args: { params: Pretty<Params> }) => Lossless.LinkDescriptor[]`,
+    "",
     `type LoaderArgs = {`,
     `  context: Lossless.AppLoadContext`,
     `  request: Request`,

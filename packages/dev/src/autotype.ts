@@ -7,6 +7,7 @@ import { typegenPath } from "./typegen"
 type Splice = [number, string]
 
 const EXPORT_TO_TYPE_CONSTRAINT: Record<string, string | undefined> = {
+  links: "LinksConstraint",
   serverLoader: "ServerLoaderConstraint",
   clientLoader: "ClientLoaderConstraint",
   // TODO clientLoaderHydrate

@@ -56,3 +56,5 @@ export type ActionData<ServerActionData, ClientActionData> = Awaited<
   IsDefined<ServerActionData> extends true ? ServerActionData :
   undefined
 >
+
+export type { LinkDescriptor } from "./links"

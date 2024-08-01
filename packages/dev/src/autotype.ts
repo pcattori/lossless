@@ -11,6 +11,8 @@ const EXPORT_TO_TYPE_CONSTRAINT: Record<string, string | undefined> = {
   clientLoader: "ClientLoaderConstraint",
   // TODO clientLoaderHydrate
   HydrateFallback: "HydrateFallbackConstraint",
+  serverAction: "ServerActionConstraint",
+  clientAction: "ClientActionConstraint",
 }
 
 export function autotypeRoute(config: Config, filepath: string, code: string) {

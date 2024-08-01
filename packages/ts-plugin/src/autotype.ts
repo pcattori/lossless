@@ -1,12 +1,9 @@
-import * as fs from "node:fs"
 import * as path from "node:path"
 
 import ts from "typescript"
 import {
   autotypeRoute,
   getRoutes,
-  typegen,
-  typegenPath,
   type AutotypedRoute,
   type Config,
 } from "@lossless/dev"
@@ -125,14 +122,6 @@ export function getAutotypeLanguageService(
       const autotyped = autotypeRoute(config, fileName, code)
       const snapshot = ts.ScriptSnapshot.fromString(autotyped.code())
       snapshot.getChangeRange = (_) => undefined
-
-      const $typesPath = typegenPath(config, fileName)
-      if (!fs.existsSync($typesPath)) {
-        typegen(route).then(async (content) => {
-          fs.mkdirSync(path.dirname($typesPath), { recursive: true })
-          fs.writeFileSync($typesPath, content)
-        })
-      }
 
       this.routes[fileName] = {
         version:

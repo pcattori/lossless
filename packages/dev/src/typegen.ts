@@ -1,21 +1,36 @@
+import * as fs from "node:fs"
 import * as path from "node:path"
 
-import type { Route } from "./routes"
+import { getRoutes, type Route } from "./routes"
 import type { Config } from "./config"
 import { noext } from "./utils"
 
-export function typegenPath(config: Config, routeFile: string): string {
-  let rel = path.relative(config.appDirectory, routeFile)
+export function getTypesPath(
+  config: Config,
+  route: Pick<Route, "file">,
+): string {
+  const typegenDir = path.join(config.appDirectory, ".lossless/typegen")
   let dest = path.join(
-    config.appDirectory,
-    ".lossless/typegen",
-    path.dirname(rel),
-    "$types." + path.basename(rel),
+    typegenDir,
+    path.dirname(route.file),
+    "$types." + path.basename(route.file),
   )
   return dest
 }
 
-export async function typegen(route: Route) {
+export function writeAll(config: Config) {
+  const routes = getRoutes(config)
+  routes.forEach((route) => write(config, route))
+}
+
+export function write(config: Config, route: Route) {
+  const content = typegen(route)
+  const $typesPath = getTypesPath(config, route)
+  fs.mkdirSync(path.dirname($typesPath), { recursive: true })
+  fs.writeFileSync($typesPath, content)
+}
+
+function typegen(route: Route) {
   let routePath = "./" + noext(path.basename(route.file))
   let paramsType = getParamsType(route)
   return [

@@ -1,8 +1,10 @@
+import * as path from "node:path"
+
 import ts from "typescript"
 
 import type { Config } from "./config"
 import { noext } from "./utils"
-import { typegenPath } from "./typegen"
+import { getTypesPath } from "./typegen"
 
 type Splice = [number, string]
 
@@ -24,12 +26,11 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
     ts.ScriptTarget.Latest,
     true,
   )
+  const route = { file: path.relative(config.appDirectory, filepath) }
+  const typesSource = noext(getTypesPath(config, route))
 
   const splices: Splice[] = [
-    [
-      0,
-      `import * as $autotype from "${noext(typegenPath(config, filepath))}"\n\n`,
-    ],
+    [0, `import * as $autotype from "${typesSource}"\n\n`],
   ]
   sourceFile.statements.forEach((stmt) => {
     if (ts.isExportAssignment(stmt)) {

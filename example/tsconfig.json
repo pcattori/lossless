@@ -24,7 +24,8 @@
 
     "jsx": "react-jsx",
 
-    "plugins": [{ "name": "@lossless/ts-plugin" }]
+    "plugins": [{ "name": "@lossless/ts-plugin" }],
+    "rootDirs": [".", "./.lossless/typegen"]
   },
   "include": [
     "./routes/**/*.ts",

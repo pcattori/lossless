@@ -134,6 +134,17 @@ export function getAutotypeLanguageService(
       }
       return this.routes[fileName]!
     }
+
+    // needed for path auto completions
+    readDirectory = host.readDirectory
+      ? (
+          ...args: Parameters<
+            NonNullable<ts.LanguageServiceHost["readDirectory"]>
+          >
+        ) => {
+          return host.readDirectory!(...args)
+        }
+      : undefined
   }
 
   const autotypeHost = new AutotypeLanguageServiceHost()

@@ -28,7 +28,7 @@ async function typegenFiles(config: Config) {
   const routes = getRoutes(config)
   await Promise.all(
     routes.map(async (route) => {
-      const code = await typegen(config, route)
+      const code = await typegen(route)
       const dest = typegenPath(config, route.file)
       await fs.mkdir(path.dirname(dest), { recursive: true })
       await fs.writeFile(dest, code)

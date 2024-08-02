@@ -1,14 +1,6 @@
-import * as path from "node:path"
-
 import ts from "typescript"
-import {
-  autotypeRoute,
-  getRoutes,
-  type AutotypedRoute,
-  type Config,
-} from "@lossless/dev"
-
-type TS = typeof ts
+import { autotypeRoute, getRoutes, type AutotypedRoute } from "@lossless/dev"
+import type { Context } from "./context"
 
 type RouteModule = {
   snapshot: ts.IScriptSnapshot
@@ -26,15 +18,11 @@ const CACHE = new WeakMap<
   } | null
 >()
 
-export function getAutotypeLanguageService(
-  config: Config,
-  info: ts.server.PluginCreateInfo,
-  ts: TS,
-) {
-  const cached = CACHE.get(info)
+export function getAutotypeLanguageService(ctx: Context) {
+  const cached = CACHE.get(ctx.info)
   if (cached) return cached
 
-  const host = info.languageServiceHost
+  const host = ctx.info.languageServiceHost
 
   class AutotypeLanguageServiceHost implements ts.LanguageServiceHost {
     private routes: Record<string, RouteModule> = {}
@@ -104,15 +92,15 @@ export function getAutotypeLanguageService(
     }
 
     upsertRouteFile(fileName: string) {
-      const route = getRoutes(config).get(fileName)
+      const route = getRoutes(ctx.config).get(fileName)
       if (!route) return
-      const sourceFile = info.languageService
+      const sourceFile = ctx.info.languageService
         .getProgram()
         ?.getSourceFile(fileName)
       if (!sourceFile) return
 
       const { text: code } = sourceFile
-      const autotyped = autotypeRoute(config, fileName, code)
+      const autotyped = autotypeRoute(ctx.config, fileName, code)
       const snapshot = ts.ScriptSnapshot.fromString(autotyped.code())
       snapshot.getChangeRange = (_) => undefined
 
@@ -149,6 +137,6 @@ export function getAutotypeLanguageService(
 
   const languageService = ts.createLanguageService(autotypeHost)
   const result = { languageService, getRoute }
-  CACHE.set(info, result)
+  CACHE.set(ctx.info, result)
   return result
 }

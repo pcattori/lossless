@@ -6,6 +6,7 @@ import type ts from "typescript/lib/tsserverlibrary"
 
 import { typegenWatch, type Config } from "@lossless/dev"
 import { getAutotypeLanguageService } from "./autotype"
+import type { Context } from "./context"
 
 type TS = typeof ts
 
@@ -25,10 +26,12 @@ function init(modules: { typescript: TS }) {
     })
 
     const ls = info.languageService
-    decorateGetDefinition(config, ls, info, ts)
-    decorateHover(config, ls, info, ts)
-    decorateSemanticDiagnostics(config, ls, info, ts)
-    decorateCompletions(config, ls, info, ts)
+    const ctx: Context = { config, ls, info, ts }
+
+    decorateGetDefinition(ctx)
+    decorateHover(ctx)
+    decorateSemanticDiagnostics(ctx)
+    decorateCompletions(ctx)
     return ls
   }
 
@@ -58,18 +61,13 @@ function getConfig(project: ts.server.Project): Config | undefined {
 // completions
 // ----------------------------------------------------------------------------
 
-function decorateCompletions(
-  config: Config,
-  ls: ts.LanguageService,
-  info: ts.server.PluginCreateInfo,
-  ts: TS,
-) {
-  const getCompletionsAtPosition = ls.getCompletionsAtPosition
-  ls.getCompletionsAtPosition = (fileName, index, options, settings) => {
+function decorateCompletions(ctx: Context) {
+  const getCompletionsAtPosition = ctx.ls.getCompletionsAtPosition
+  ctx.ls.getCompletionsAtPosition = (fileName, index, options, settings) => {
     const fallback = () =>
       getCompletionsAtPosition(fileName, index, options, settings)
 
-    const autotype = getAutotypeLanguageService(config, info, ts)
+    const autotype = getAutotypeLanguageService(ctx)
     if (!autotype) return fallback()
 
     const route = autotype.getRoute(fileName)
@@ -111,15 +109,10 @@ function decorateCompletions(
 // semantic diagnostics
 // ----------------------------------------------------------------------------
 
-function decorateSemanticDiagnostics(
-  config: Config,
-  ls: ts.LanguageService,
-  info: ts.server.PluginCreateInfo,
-  ts: TS,
-) {
-  const getSemanticDiagnostics = ls.getSemanticDiagnostics
-  ls.getSemanticDiagnostics = (fileName: string) => {
-    const autotype = getAutotypeLanguageService(config, info, ts)
+function decorateSemanticDiagnostics(ctx: Context) {
+  const getSemanticDiagnostics = ctx.ls.getSemanticDiagnostics
+  ctx.ls.getSemanticDiagnostics = (fileName: string) => {
+    const autotype = getAutotypeLanguageService(ctx)
     if (!autotype) return getSemanticDiagnostics(fileName)
 
     const route = autotype.getRoute(fileName)
@@ -144,15 +137,10 @@ function decorateSemanticDiagnostics(
 // hover
 // ----------------------------------------------------------------------------
 
-function decorateHover(
-  config: Config,
-  ls: ts.LanguageService,
-  info: ts.server.PluginCreateInfo,
-  ts: TS,
-) {
-  const getQuickInfoAtPosition = ls.getQuickInfoAtPosition
-  ls.getQuickInfoAtPosition = (fileName: string, index: number) => {
-    const autotype = getAutotypeLanguageService(config, info, ts)
+function decorateHover(ctx: Context) {
+  const getQuickInfoAtPosition = ctx.ls.getQuickInfoAtPosition
+  ctx.ls.getQuickInfoAtPosition = (fileName: string, index: number) => {
+    const autotype = getAutotypeLanguageService(ctx)
     if (!autotype) return getQuickInfoAtPosition(fileName, index)
 
     const route = autotype.getRoute(fileName)
@@ -177,15 +165,10 @@ function decorateHover(
 // definitions
 // ----------------------------------------------------------------------------
 
-function decorateGetDefinition(
-  config: Config,
-  ls: ts.LanguageService,
-  info: ts.server.PluginCreateInfo,
-  ts: TS,
-) {
-  const getDefinitionAndBoundSpan = ls.getDefinitionAndBoundSpan
-  ls.getDefinitionAndBoundSpan = (fileName, index) => {
-    const autotype = getAutotypeLanguageService(config, info, ts)
+function decorateGetDefinition(ctx: Context) {
+  const getDefinitionAndBoundSpan = ctx.ls.getDefinitionAndBoundSpan
+  ctx.ls.getDefinitionAndBoundSpan = (fileName, index) => {
+    const autotype = getAutotypeLanguageService(ctx)
     if (!autotype) return getDefinitionAndBoundSpan(fileName, index)
 
     const route = autotype.getRoute(fileName)

@@ -62,7 +62,7 @@ function getConfig(project: ts.server.Project): Config | undefined {
 // ----------------------------------------------------------------------------
 
 function decorateCompletions(ctx: Context) {
-  const getCompletionsAtPosition = ctx.ls.getCompletionsAtPosition
+  const { getCompletionsAtPosition } = ctx.ls
   ctx.ls.getCompletionsAtPosition = (fileName, index, options, settings) => {
     const fallback = () =>
       getCompletionsAtPosition(fileName, index, options, settings)
@@ -223,20 +223,22 @@ function getRouteDiagnostics<
 // ----------------------------------------------------------------------------
 
 function decorateHover(ctx: Context) {
-  const getQuickInfoAtPosition = ctx.ls.getQuickInfoAtPosition
+  const { getQuickInfoAtPosition } = ctx.ls
   ctx.ls.getQuickInfoAtPosition = (fileName: string, index: number) => {
+    const fallback = () => getQuickInfoAtPosition(fileName, index)
+
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return getQuickInfoAtPosition(fileName, index)
+    if (!autotype) return fallback()
 
     const route = autotype.getRoute(fileName)
-    if (!route) return getQuickInfoAtPosition(fileName, index)
+    if (!route) return fallback()
 
     const splicedIndex = route.autotyped.toSplicedIndex(index)
     const quickinfo = autotype.languageService.getQuickInfoAtPosition(
       fileName,
       splicedIndex,
     )
-    if (!quickinfo) return getQuickInfoAtPosition(fileName, index)
+    if (!quickinfo) return fallback()
     return {
       ...quickinfo,
       textSpan: {
@@ -251,20 +253,22 @@ function decorateHover(ctx: Context) {
 // ----------------------------------------------------------------------------
 
 function decorateGetDefinition(ctx: Context) {
-  const getDefinitionAndBoundSpan = ctx.ls.getDefinitionAndBoundSpan
+  const { getDefinitionAndBoundSpan } = ctx.ls
   ctx.ls.getDefinitionAndBoundSpan = (fileName, index) => {
+    const fallback = () => getDefinitionAndBoundSpan(fileName, index)
+
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return getDefinitionAndBoundSpan(fileName, index)
+    if (!autotype) return fallback()
 
     const route = autotype.getRoute(fileName)
-    if (!route) return getDefinitionAndBoundSpan(fileName, index)
+    if (!route) return fallback()
 
     const splicedIndex = route.autotyped.toSplicedIndex(index)
     const definitions = autotype.languageService.getDefinitionAndBoundSpan(
       fileName,
       splicedIndex,
     )
-    if (!definitions) return getDefinitionAndBoundSpan(fileName, index)
+    if (!definitions) return fallback()
     return {
       ...definitions,
       textSpan: {

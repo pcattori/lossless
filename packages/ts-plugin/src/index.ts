@@ -32,6 +32,7 @@ function init(modules: { typescript: TS }) {
     decorateHover(ctx)
     decorateSyntacticDiagnostics(ctx)
     decorateSemanticDiagnostics(ctx)
+    decorateSuggestionDiagnostics(ctx)
     decorateCompletions(ctx)
     return ls
   }
@@ -126,6 +127,16 @@ function decorateSemanticDiagnostics(ctx: Context) {
     return (
       getRouteDiagnostics(ctx, "getSemanticDiagnostics", fileName) ??
       getSemanticDiagnostics(fileName)
+    )
+  }
+}
+
+function decorateSuggestionDiagnostics(ctx: Context) {
+  const { getSuggestionDiagnostics } = ctx.ls
+  ctx.ls.getSuggestionDiagnostics = (fileName: string) => {
+    return (
+      getRouteDiagnostics(ctx, "getSuggestionDiagnostics", fileName) ??
+      getSuggestionDiagnostics(fileName)
     )
   }
 }

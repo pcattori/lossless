@@ -45,6 +45,10 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         throw Error(`Unexpected 'export  =' in '${filepath}'`)
       }
       splices.push({
+        index: stmt.getStart(sourceFile),
+        content: "\n/** docs for default export go here */\n",
+      })
+      splices.push({
         index: stmt.expression.getStart(sourceFile),
         content: "(",
       })
@@ -65,6 +69,10 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         let type = EXPORT_TO_TYPE_CONSTRAINT[decl.name.text]
         if (!type) continue
         splices.push({
+          index: stmt.getStart(sourceFile),
+          content: `\n/** docs for ${decl.name.text} go here */\n`,
+        })
+        splices.push({
           index: decl.initializer.getStart(sourceFile),
           content: "(",
         })
@@ -84,6 +92,10 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       let type = EXPORT_TO_TYPE_CONSTRAINT[stmt.name.text]
       if (!type) return
       if (!stmt.body) return
+      splices.push({
+        index: stmt.getStart(sourceFile),
+        content: `\n/** docs for ${stmt.name.text} go here */\n`,
+      })
       splices.push({
         index: exp.getEnd() + 1, // TODO: account for more whitespace
         content: `const ${stmt.name.text} = (`,

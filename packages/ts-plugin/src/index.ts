@@ -160,6 +160,23 @@ function decorateCompletions(ctx: Context) {
     })
     return details
   }
+
+  const { getSignatureHelpItems } = ctx.ls
+  ctx.ls.getSignatureHelpItems = (fileName, position, options) => {
+    const fallback = () => getSignatureHelpItems(fileName, position, options)
+
+    const autotype = getAutotypeLanguageService(ctx)
+    if (!autotype) return fallback()
+
+    const route = autotype.getRoute(fileName)
+    if (!route) return fallback()
+
+    return autotype.languageService.getSignatureHelpItems(
+      fileName,
+      route.autotyped.toSplicedIndex(position),
+      options,
+    )
+  }
 }
 
 // diagnostics

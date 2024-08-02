@@ -32,6 +32,7 @@ function init(modules: { typescript: TS }) {
     decorateHover(ctx)
     decorateDiagnostics(ctx)
     decorateCompletions(ctx)
+    decorateInlayHints(ctx)
     return ls
   }
 
@@ -293,5 +294,37 @@ function decorateGetDefinition(ctx: Context) {
         start: route.autotyped.toOriginalIndex(definitions.textSpan.start),
       },
     }
+  }
+}
+
+// inlay hints
+// ----------------------------------------------------------------------------
+
+function decorateInlayHints(ctx: Context): void {
+  const { provideInlayHints } = ctx.ls
+  ctx.ls.provideInlayHints = (fileName, span, preferences) => {
+    const fallback = () => provideInlayHints(fileName, span, preferences)
+
+    const autotype = getAutotypeLanguageService(ctx)
+    if (!autotype) return fallback()
+
+    const route = autotype.getRoute(fileName)
+    if (!route) return fallback()
+
+    const start = route.autotyped.toSplicedIndex(span.start)
+    return autotype.languageService
+      .provideInlayHints(
+        fileName,
+        {
+          start,
+          length:
+            route.autotyped.toSplicedIndex(span.start + span.length) - start,
+        },
+        preferences,
+      )
+      .map((hint) => ({
+        ...hint,
+        position: route.autotyped.toOriginalIndex(hint.position),
+      }))
   }
 }

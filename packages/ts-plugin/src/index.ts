@@ -66,9 +66,6 @@ function decorateCompletions(
 ) {
   const getCompletionsAtPosition = ls.getCompletionsAtPosition
   ls.getCompletionsAtPosition = (fileName, index, options, settings) => {
-    info.project.projectService.logger.info(
-      "[@lossless/ts-plugin] getCompletionsAtPosition",
-    )
     const fallback = () =>
       getCompletionsAtPosition(fileName, index, options, settings)
 
@@ -86,9 +83,6 @@ function decorateCompletions(
       settings,
     )
     if (!completions) return fallback()
-    info.project.projectService.logger.info(
-      `[@lossless/ts-plugin] getCompletionsAtPosition: ${JSON.stringify(completions)}`,
-    )
 
     completions.entries = completions.entries.map((c) => {
       if (c.replacementSpan) {
@@ -130,14 +124,8 @@ function decorateSemanticDiagnostics(
 
     const route = autotype.getRoute(fileName)
     if (!route) {
-      info.project.projectService.logger.info(
-        `[@lossless/ts-plugin] diagnostics/non-route: ${fileName}`,
-      )
       return getSemanticDiagnostics(fileName)
     }
-    info.project.projectService.logger.info(
-      `[@lossless/ts-plugin] diagnostics/route: ${fileName}`,
-    )
 
     const diagnostics: ts.Diagnostic[] = []
     for (let diagnostic of autotype.languageService.getSemanticDiagnostics(

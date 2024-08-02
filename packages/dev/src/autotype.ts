@@ -34,7 +34,9 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
   ]
   sourceFile.statements.forEach((stmt) => {
     if (ts.isExportAssignment(stmt)) {
-      // export default |>(<|() => {}|>)satisfies <type><|
+      // BEFORE: export default expr
+      // AFTER:  export default (expr) satisfies <type>
+      //                        ^    ^^^^^^^^^^^^^^^^^^
       if (stmt.isExportEquals === true) {
         throw Error(`Unexpected 'export  =' in '${filepath}'`)
       }
@@ -44,7 +46,9 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         ") satisfies $autotype.ComponentConstraint",
       ])
     } else if (ts.isVariableStatement(stmt)) {
-      // export const loader = |>(<|() => {}|>)satisfies <type><|
+      // BEFORE: export const loader = expr
+      // AFTER:  export const loader = (expr) satisfies <type>
+      //                               ^    ^^^^^^^^^^^^^^^^^^
       if (!exported(stmt)) return
       for (let decl of stmt.declarationList.declarations) {
         if (!ts.isIdentifier(decl.name)) continue
@@ -58,7 +62,9 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         ])
       }
     } else if (ts.isFunctionDeclaration(stmt)) {
-      // export |>const loader = (<|function loader() {}|>) satisfies <type><|
+      // BEFORE: export function loader() {...}
+      // AFTER:  export const loader = (function loader() {...}) satisfies <type>
+      //                ^^^^^^^^^^^^^^^^                       ^^^^^^^^^^^^^^^^^^
       let exp = exported(stmt)
       if (!exp) return
       if (!stmt.name) return

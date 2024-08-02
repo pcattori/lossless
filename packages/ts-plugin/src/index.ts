@@ -106,6 +106,62 @@ function decorateCompletions(ctx: Context) {
     }
     return completions
   }
+
+  const { getCompletionEntryDetails } = ctx.ls
+  ctx.ls.getCompletionEntryDetails = (
+    fileName,
+    position,
+    entryName,
+    formatOptions,
+    source,
+    preferences,
+    data,
+  ) => {
+    const fallback = () =>
+      getCompletionEntryDetails(
+        fileName,
+        position,
+        entryName,
+        formatOptions,
+        source,
+        preferences,
+        data,
+      )
+
+    const autotype = getAutotypeLanguageService(ctx)
+    if (!autotype) return fallback()
+
+    const route = autotype.getRoute(fileName)
+    if (!route) return fallback()
+
+    const details = autotype.languageService.getCompletionEntryDetails(
+      fileName,
+      route.autotyped.toSplicedIndex(position),
+      entryName,
+      formatOptions,
+      source,
+      preferences,
+      data,
+    )
+    if (!details) return fallback()
+
+    details.codeActions = details.codeActions?.map((codeAction) => {
+      codeAction.changes = codeAction.changes.map((change) => {
+        change.textChanges = change.textChanges.map((textChange) => {
+          return {
+            ...textChange,
+            span: {
+              ...textChange.span,
+              start: route.autotyped.toOriginalIndex(textChange.span.start),
+            },
+          }
+        })
+        return change
+      })
+      return codeAction
+    })
+    return details
+  }
 }
 
 // diagnostics

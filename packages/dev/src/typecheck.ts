@@ -25,19 +25,14 @@ function parseTsconfig(config: Config): ts.ParsedCommandLine {
 
 export default async function typecheck(config: Config) {
   const routes = getRoutes(config)
-  const routePaths = new Set(routes.map((r) => r.file))
-  function isRoute(filepath: string) {
-    let rel = path.relative(config.appDirectory, filepath)
-    if (path.isAbsolute(rel) || rel.startsWith("..")) return false
-    return routePaths.has(rel)
-  }
 
   const { fileNames, options } = parseTsconfig(config)
   const host = ts.createCompilerHost(options)
   const originalReadFile = host.readFile
   host.readFile = (fileName: string) => {
     const content = originalReadFile(fileName)
-    if (content && isRoute(fileName)) {
+    const route = routes.get(fileName)
+    if (content && route) {
       return autotypeRoute(config, fileName, content).code()
     }
     return content

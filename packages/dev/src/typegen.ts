@@ -1,17 +1,50 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-import { getRoutes, type Route } from "./routes"
+import chokidar from "chokidar"
+
+import { getRoutes, getRoutesFile, type Route } from "./routes"
 import type { Config } from "./config"
 import { noext } from "./utils"
+
+function getTypegenDir(config: Config) {
+  return path.join(config.appDirectory, ".lossless/typegen")
+}
+
+let WATCHER: chokidar.FSWatcher | undefined = undefined
+export function watch(config: Config, log?: (msg: string) => void) {
+  if (WATCHER) return
+
+  // TODO: more surgical clean up
+  fs.rmSync(getTypegenDir(config), { recursive: true, force: true })
+  writeAll(config)
+
+  const routesFile = getRoutesFile(config)
+  log?.(`WOW :: routes.cjs at ${routesFile}`)
+
+  WATCHER = chokidar.watch(config.appDirectory, { ignoreInitial: true })
+  WATCHER.on("all", (event, file) => {
+    log?.(`WOW :: event:${event} file:${file}`)
+    if (file === routesFile) {
+      log?.("WOW :: routes.cjs changed")
+      return writeAll(config)
+    }
+    const routes = getRoutes(config)
+    const route = routes.get(file)
+    if (route && event === "add") {
+      log?.(`WOW :: route added ${route.file}`)
+      return write(config, route)
+    }
+    // TODO: if route is removed, clean up its typegen'd file
+  })
+}
 
 export function getTypesPath(
   config: Config,
   route: Pick<Route, "file">,
 ): string {
-  const typegenDir = path.join(config.appDirectory, ".lossless/typegen")
   let dest = path.join(
-    typegenDir,
+    getTypegenDir(config),
     path.dirname(route.file),
     "$types." + path.basename(route.file),
   )
@@ -20,7 +53,7 @@ export function getTypesPath(
 
 export function writeAll(config: Config) {
   const routes = getRoutes(config)
-  routes.forEach((route) => write(config, route))
+  return Array.from(routes.values()).map((route) => write(config, route))
 }
 
 export function write(config: Config, route: Route) {
@@ -28,6 +61,7 @@ export function write(config: Config, route: Route) {
   const $typesPath = getTypesPath(config, route)
   fs.mkdirSync(path.dirname($typesPath), { recursive: true })
   fs.writeFileSync($typesPath, content)
+  return $typesPath
 }
 
 function typegen(route: Route) {

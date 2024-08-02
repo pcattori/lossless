@@ -4,7 +4,7 @@ import * as path from "node:path"
 
 import type ts from "typescript/lib/tsserverlibrary"
 
-import { type Config } from "@lossless/dev"
+import { typegenWatch, type Config } from "@lossless/dev"
 import { getAutotypeLanguageService } from "./autotype"
 
 type TS = typeof ts
@@ -20,6 +20,9 @@ function init(modules: { typescript: TS }) {
 
     const config = getConfig(info.project)
     if (!config) return
+    typegenWatch(config, (msg) => {
+      info.project.projectService.logger.info(msg)
+    })
 
     const ls = info.languageService
     decorateGetDefinition(config, ls, info, ts)

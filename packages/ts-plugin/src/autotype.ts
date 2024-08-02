@@ -34,13 +34,6 @@ export function getAutotypeLanguageService(
   const cached = CACHE.get(info)
   if (cached) return cached
 
-  const ROUTES_BY_FILE = new Map(
-    getRoutes(config).map((route) => [
-      path.join(config.appDirectory, route.file),
-      route,
-    ]),
-  )
-
   const host = info.languageServiceHost
 
   class AutotypeLanguageServiceHost implements ts.LanguageServiceHost {
@@ -111,7 +104,7 @@ export function getAutotypeLanguageService(
     }
 
     upsertRouteFile(fileName: string) {
-      const route = ROUTES_BY_FILE.get(fileName)
+      const route = getRoutes(config).get(fileName)
       if (!route) return
       const sourceFile = info.languageService
         .getProgram()

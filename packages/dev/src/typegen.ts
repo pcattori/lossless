@@ -20,19 +20,17 @@ export function watch(config: Config, log?: (msg: string) => void) {
   writeAll(config)
 
   const routesFile = getRoutesFile(config)
-  log?.(`WOW :: routes.cjs at ${routesFile}`)
 
   WATCHER = chokidar.watch(config.appDirectory, { ignoreInitial: true })
   WATCHER.on("all", (event, file) => {
-    log?.(`WOW :: event:${event} file:${file}`)
     if (file === routesFile) {
-      log?.("WOW :: routes.cjs changed")
+      log?.("routes file changed")
       return writeAll(config)
     }
     const routes = getRoutes(config)
     const route = routes.get(file)
     if (route && event === "add") {
-      log?.(`WOW :: route added ${route.file}`)
+      log?.(`route added: ${route.file}`)
       return write(config, route)
     }
     // TODO: if route is removed, clean up its typegen'd file

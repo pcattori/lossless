@@ -21,7 +21,7 @@ function init(modules: { typescript: TS }) {
     const config = getConfig(info.project)
     if (!config) return
     typegenWatch(config, (msg) => {
-      info.project.projectService.logger.info(msg)
+      info.project.projectService.logger.info("[@lossless/ts-plugin] " + msg)
     })
 
     const ls = info.languageService

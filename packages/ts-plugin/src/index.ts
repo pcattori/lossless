@@ -30,9 +30,7 @@ function init(modules: { typescript: TS }) {
 
     decorateGetDefinition(ctx)
     decorateHover(ctx)
-    decorateSyntacticDiagnostics(ctx)
-    decorateSemanticDiagnostics(ctx)
-    decorateSuggestionDiagnostics(ctx)
+    decorateDiagnostics(ctx)
     decorateCompletions(ctx)
     return ls
   }
@@ -167,7 +165,7 @@ function decorateCompletions(ctx: Context) {
 // diagnostics
 // ----------------------------------------------------------------------------
 
-function decorateSyntacticDiagnostics(ctx: Context) {
+function decorateDiagnostics(ctx: Context) {
   const { getSyntacticDiagnostics } = ctx.ls
   ctx.ls.getSyntacticDiagnostics = (fileName: string) => {
     return (
@@ -175,9 +173,7 @@ function decorateSyntacticDiagnostics(ctx: Context) {
       getSyntacticDiagnostics(fileName)
     )
   }
-}
 
-function decorateSemanticDiagnostics(ctx: Context) {
   const { getSemanticDiagnostics } = ctx.ls
   ctx.ls.getSemanticDiagnostics = (fileName: string) => {
     return (
@@ -185,9 +181,7 @@ function decorateSemanticDiagnostics(ctx: Context) {
       getSemanticDiagnostics(fileName)
     )
   }
-}
 
-function decorateSuggestionDiagnostics(ctx: Context) {
   const { getSuggestionDiagnostics } = ctx.ls
   ctx.ls.getSuggestionDiagnostics = (fileName: string) => {
     return (

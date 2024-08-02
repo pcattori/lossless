@@ -30,6 +30,7 @@ function init(modules: { typescript: TS }) {
 
     decorateGetDefinition(ctx)
     decorateHover(ctx)
+    decorateSyntacticDiagnostics(ctx)
     decorateSemanticDiagnostics(ctx)
     decorateCompletions(ctx)
     return ls
@@ -106,32 +107,55 @@ function decorateCompletions(ctx: Context) {
   }
 }
 
-// semantic diagnostics
+// diagnostics
 // ----------------------------------------------------------------------------
 
-function decorateSemanticDiagnostics(ctx: Context) {
-  const getSemanticDiagnostics = ctx.ls.getSemanticDiagnostics
-  ctx.ls.getSemanticDiagnostics = (fileName: string) => {
-    const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return getSemanticDiagnostics(fileName)
-
-    const route = autotype.getRoute(fileName)
-    if (!route) {
-      return getSemanticDiagnostics(fileName)
-    }
-
-    const diagnostics: ts.Diagnostic[] = []
-    for (let diagnostic of autotype.languageService.getSemanticDiagnostics(
-      fileName,
-    )) {
-      let start = diagnostic.start
-      if (start) {
-        start = route.autotyped.toOriginalIndex(start)
-      }
-      diagnostics.push({ ...diagnostic, start })
-    }
-    return diagnostics
+function decorateSyntacticDiagnostics(ctx: Context) {
+  const { getSyntacticDiagnostics } = ctx.ls
+  ctx.ls.getSyntacticDiagnostics = (fileName: string) => {
+    return (
+      getRouteDiagnostics(ctx, "getSyntacticDiagnostics", fileName) ??
+      getSyntacticDiagnostics(fileName)
+    )
   }
+}
+
+function decorateSemanticDiagnostics(ctx: Context) {
+  const { getSemanticDiagnostics } = ctx.ls
+  ctx.ls.getSemanticDiagnostics = (fileName: string) => {
+    return (
+      getRouteDiagnostics(ctx, "getSemanticDiagnostics", fileName) ??
+      getSemanticDiagnostics(fileName)
+    )
+  }
+}
+
+function getRouteDiagnostics<
+  T extends
+    | "getSemanticDiagnostics"
+    | "getSuggestionDiagnostics"
+    | "getSyntacticDiagnostics",
+>(
+  ctx: Context,
+  methodName: T,
+  fileName: string,
+): ReturnType<ts.LanguageService[T]> | undefined {
+  const autotype = getAutotypeLanguageService(ctx)
+  if (!autotype) return
+
+  const route = autotype.getRoute(fileName)
+  if (!route) return
+
+  const diagnostics: ts.Diagnostic[] = []
+  for (let diagnostic of autotype.languageService[methodName](fileName)) {
+    let start = diagnostic.start
+    if (start) {
+      start = route.autotyped.toOriginalIndex(start)
+    }
+    diagnostics.push({ ...diagnostic, start })
+  }
+  // @ts-expect-error
+  return diagnostics
 }
 
 // hover

@@ -6,7 +6,10 @@ import type { Config } from "./config"
 import { noext } from "./utils"
 import { getTypesPath } from "./typegen"
 
-type Splice = [number, string]
+type Splice = {
+  index: number
+  content: string
+}
 
 const EXPORT_TO_TYPE_CONSTRAINT: Record<string, string | undefined> = {
   links: "LinksConstraint",
@@ -30,7 +33,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
   const typesSource = noext(getTypesPath(config, route))
 
   const splices: Splice[] = [
-    [0, `import * as $autotype from "${typesSource}"\n\n`],
+    { index: 0, content: `import * as $autotype from "${typesSource}"\n\n` },
   ]
   sourceFile.statements.forEach((stmt) => {
     if (ts.isExportAssignment(stmt)) {
@@ -40,26 +43,35 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       if (stmt.isExportEquals === true) {
         throw Error(`Unexpected 'export  =' in '${filepath}'`)
       }
-      splices.push([stmt.expression.getStart(sourceFile), "("])
-      splices.push([
-        stmt.expression.getEnd(),
-        ") satisfies $autotype.ComponentConstraint",
-      ])
+      const exportSpan = [stmt.getStart(sourceFile), "export default".length]
+      splices.push({
+        index: stmt.expression.getStart(sourceFile),
+        content: "(",
+      })
+      splices.push({
+        index: stmt.expression.getEnd(),
+        content: ") satisfies $autotype.ComponentConstraint",
+      })
     } else if (ts.isVariableStatement(stmt)) {
       // BEFORE: export const loader = expr
       // AFTER:  export const loader = (expr) satisfies <type>
       //                               ^    ^^^^^^^^^^^^^^^^^^
-      if (!exported(stmt)) return
+      let exp = exported(stmt)
+      if (!exp) return
+      const exportSpan = [exp.getStart(sourceFile), exp.getEnd()]
       for (let decl of stmt.declarationList.declarations) {
         if (!ts.isIdentifier(decl.name)) continue
         if (decl.initializer === undefined) continue
         let type = EXPORT_TO_TYPE_CONSTRAINT[decl.name.text]
         if (!type) continue
-        splices.push([decl.initializer.getStart(sourceFile), "("])
-        splices.push([
-          decl.initializer.getEnd(),
-          `) satisfies $autotype.${type}`,
-        ])
+        splices.push({
+          index: decl.initializer.getStart(sourceFile),
+          content: "(",
+        })
+        splices.push({
+          index: decl.initializer.getEnd(),
+          content: `) satisfies $autotype.${type}`,
+        })
       }
     } else if (ts.isFunctionDeclaration(stmt)) {
       // BEFORE: export function loader() {...}
@@ -67,12 +79,19 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       //                ^^^^^^^^^^^^^^^^                       ^^^^^^^^^^^^^^^^^^
       let exp = exported(stmt)
       if (!exp) return
+      const exportSpan = [exp.getStart(sourceFile), exp.getEnd()]
       if (!stmt.name) return
       let type = EXPORT_TO_TYPE_CONSTRAINT[stmt.name.text]
       if (!type) return
       if (!stmt.body) return
-      splices.push([exp.getEnd() + 1, `const ${stmt.name.text} = (`])
-      splices.push([stmt.body.getEnd(), `) satisfies $autotype.${type}`])
+      splices.push({
+        index: exp.getEnd() + 1, // TODO: account for more whitespace
+        content: `const ${stmt.name.text} = (`,
+      })
+      splices.push({
+        index: stmt.body.getEnd(),
+        content: `) satisfies $autotype.${type}`,
+      })
     }
   })
   return new AutotypedRoute(code, splices)
@@ -80,11 +99,11 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
 
 export class AutotypedRoute {
   private _originalCode: string
-  private _splices: [number, string][]
+  private _splices: Splice[]
 
   private _code: string | undefined = undefined
 
-  constructor(code: string, splices: [number, string][]) {
+  constructor(code: string, splices: Splice[]) {
     this._originalCode = code
     this._splices = splices
   }
@@ -94,7 +113,7 @@ export class AutotypedRoute {
       const chars = Array.from(this._originalCode)
 
       // iterate over splices in reverse so that splicing doesn't mess up other indices
-      for (let [index, content] of reverse(this._splices)) {
+      for (let { index, content } of reverse(this._splices)) {
         chars.splice(index, 0, content)
       }
 
@@ -105,7 +124,7 @@ export class AutotypedRoute {
 
   toSplicedIndex(originalIndex: number): number {
     let spliceOffset = 0
-    for (let [index, content] of this._splices) {
+    for (let { index, content } of this._splices) {
       if (index > originalIndex) break
       spliceOffset += content.length
     }
@@ -114,7 +133,7 @@ export class AutotypedRoute {
 
   toOriginalIndex(splicedIndex: number): number {
     let spliceOffset = 0
-    for (let [index, content] of this._splices) {
+    for (let { index, content } of this._splices) {
       // before this splice
       if (splicedIndex < index + spliceOffset) break
 

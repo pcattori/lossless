@@ -9,6 +9,7 @@ import { getTypesPath } from "./typegen"
 type Splice = {
   index: number
   content: string
+  exportIndex?: number
 }
 
 const EXPORT_TO_TYPE_CONSTRAINT: Record<string, string | undefined> = {
@@ -43,7 +44,6 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       if (stmt.isExportEquals === true) {
         throw Error(`Unexpected 'export  =' in '${filepath}'`)
       }
-      const exportSpan = [stmt.getStart(sourceFile), "export default".length]
       splices.push({
         index: stmt.expression.getStart(sourceFile),
         content: "(",
@@ -51,6 +51,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       splices.push({
         index: stmt.expression.getEnd(),
         content: ") satisfies $autotype.ComponentConstraint",
+        exportIndex: stmt.getStart(sourceFile),
       })
     } else if (ts.isVariableStatement(stmt)) {
       // BEFORE: export const loader = expr
@@ -58,7 +59,6 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       //                               ^    ^^^^^^^^^^^^^^^^^^
       let exp = exported(stmt)
       if (!exp) return
-      const exportSpan = [exp.getStart(sourceFile), exp.getEnd()]
       for (let decl of stmt.declarationList.declarations) {
         if (!ts.isIdentifier(decl.name)) continue
         if (decl.initializer === undefined) continue
@@ -71,6 +71,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         splices.push({
           index: decl.initializer.getEnd(),
           content: `) satisfies $autotype.${type}`,
+          exportIndex: exp.getStart(sourceFile),
         })
       }
     } else if (ts.isFunctionDeclaration(stmt)) {
@@ -79,7 +80,6 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       //                ^^^^^^^^^^^^^^^^                       ^^^^^^^^^^^^^^^^^^
       let exp = exported(stmt)
       if (!exp) return
-      const exportSpan = [exp.getStart(sourceFile), exp.getEnd()]
       if (!stmt.name) return
       let type = EXPORT_TO_TYPE_CONSTRAINT[stmt.name.text]
       if (!type) return
@@ -91,6 +91,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       splices.push({
         index: stmt.body.getEnd(),
         content: `) satisfies $autotype.${type}`,
+        exportIndex: exp.getStart(sourceFile),
       })
     }
   })
@@ -131,19 +132,23 @@ export class AutotypedRoute {
     return originalIndex + spliceOffset
   }
 
-  toOriginalIndex(splicedIndex: number): number {
+  toOriginalIndex(splicedIndex: number): {
+    index: number
+    exportIndex?: number
+  } {
     let spliceOffset = 0
-    for (let { index, content } of this._splices) {
+    for (let { index, content, exportIndex } of this._splices) {
       // before this splice
       if (splicedIndex < index + spliceOffset) break
 
       // within this splice
-      if (splicedIndex < index + spliceOffset + content.length) return index
+      if (splicedIndex < index + spliceOffset + content.length)
+        return { index, exportIndex }
 
       // after this splice
       spliceOffset += content.length
     }
-    return Math.max(0, splicedIndex - spliceOffset)
+    return { index: Math.max(0, splicedIndex - spliceOffset) }
   }
 }
 

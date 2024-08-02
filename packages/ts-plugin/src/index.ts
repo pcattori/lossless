@@ -89,7 +89,8 @@ function decorateCompletions(ctx: Context) {
           ...c,
           replacementSpan: {
             ...c.replacementSpan,
-            start: route.autotyped.toOriginalIndex(c.replacementSpan.start),
+            start: route.autotyped.toOriginalIndex(c.replacementSpan.start)
+              .index,
           },
         }
       }
@@ -100,7 +101,7 @@ function decorateCompletions(ctx: Context) {
         ...completions.optionalReplacementSpan,
         start: route.autotyped.toOriginalIndex(
           completions.optionalReplacementSpan.start,
-        ),
+        ).index,
       }
     }
     return completions
@@ -151,7 +152,8 @@ function decorateCompletions(ctx: Context) {
             ...textChange,
             span: {
               ...textChange.span,
-              start: route.autotyped.toOriginalIndex(textChange.span.start),
+              start: route.autotyped.toOriginalIndex(textChange.span.start)
+                .index,
             },
           }
         })
@@ -228,10 +230,13 @@ function getRouteDiagnostics<
   const diagnostics: ts.Diagnostic[] = []
   for (let diagnostic of autotype.languageService[methodName](fileName)) {
     let start = diagnostic.start
+    let length = diagnostic.length
     if (start) {
-      start = route.autotyped.toOriginalIndex(start)
+      const { index, exportIndex } = route.autotyped.toOriginalIndex(start)
+      start = exportIndex === undefined ? index : exportIndex
+      length = exportIndex === undefined ? length : 6
     }
-    diagnostics.push({ ...diagnostic, start })
+    diagnostics.push({ ...diagnostic, start, length })
   }
   // @ts-expect-error
   return diagnostics
@@ -261,7 +266,7 @@ function decorateHover(ctx: Context) {
       ...quickinfo,
       textSpan: {
         ...quickinfo.textSpan,
-        start: route.autotyped.toOriginalIndex(quickinfo.textSpan.start),
+        start: route.autotyped.toOriginalIndex(quickinfo.textSpan.start).index,
       },
     }
   }
@@ -291,7 +296,8 @@ function decorateGetDefinition(ctx: Context) {
       ...definitions,
       textSpan: {
         ...definitions.textSpan,
-        start: route.autotyped.toOriginalIndex(definitions.textSpan.start),
+        start: route.autotyped.toOriginalIndex(definitions.textSpan.start)
+          .index,
       },
     }
   }
@@ -324,7 +330,7 @@ function decorateInlayHints(ctx: Context): void {
       )
       .map((hint) => ({
         ...hint,
-        position: route.autotyped.toOriginalIndex(hint.position),
+        position: route.autotyped.toOriginalIndex(hint.position).index,
       }))
   }
 }

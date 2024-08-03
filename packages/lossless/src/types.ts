@@ -1,9 +1,15 @@
+import type { LinkDescriptor } from "./links"
+import type { ReactNode } from "react"
+
 // prettier-ignore
 type Equal<X, Y> =
   (<T>() => T extends X ? 1 : 2) extends
   (<T>() => T extends Y ? 1 : 2) ? true : false
-
+type Pretty<T> = { [K in keyof T]: T[K] } & {}
+type IsAny<T> = 0 extends 1 & T ? true : false
+type Fn = (...args: any[]) => unknown
 type MaybePromise<T> = T | Promise<T>
+
 type IsDefined<T> = Equal<T, undefined> extends true ? false : true
 
 export interface AppLoadContext {}
@@ -26,12 +32,12 @@ type Serializable =
   | Set<Serializable>
   | Promise<Serializable>
 
-export type ServerData = MaybePromise<
+type ServerData = MaybePromise<
   Exclude<Serializable, undefined | Promise<Serializable>>
 >
 
 // prettier-ignore
-export type LoaderData<
+type LoaderData<
   ServerLoaderData,
   ClientLoaderData,
   ClientLoaderHydrate extends boolean,
@@ -50,11 +56,83 @@ export type LoaderData<
   undefined
 
 // prettier-ignore
-export type ActionData<ServerActionData, ClientActionData> = Awaited<
+type ActionData<ServerActionData, ClientActionData> = Awaited<
   [IsDefined<ServerActionData>, IsDefined<ClientActionData>] extends [true, true] ? ServerActionData | ClientActionData :
   IsDefined<ClientActionData> extends true ? ClientActionData :
   IsDefined<ServerActionData> extends true ? ServerActionData :
   undefined
 >
 
-export type { LinkDescriptor } from "./links"
+type LoaderArgs<Params> = {
+  context: AppLoadContext
+  request: Request
+  params: Pretty<Params>
+}
+
+type ActionArgs<Params> = {
+  context: AppLoadContext
+  request: Request
+  params: Pretty<Params>
+}
+
+// prettier-ignore
+type DataFrom<T> =
+  IsAny<T> extends true ? undefined :
+  T extends Fn ? Awaited<ReturnType<T>> :
+  undefined
+
+export type RouteConstraints<
+  Params,
+  RouteModule extends {
+    serverLoader?: Fn
+    clientLoader?: Fn
+    serverAction?: Fn
+    clientAction?: Fn
+    HydrateFallback?: Fn
+  },
+> = {
+  // TODO: meta, handle, shouldRevalidate
+  links: (args: { params: Pretty<Params> }) => LinkDescriptor[]
+  serverLoader: (args: LoaderArgs<Params>) => ServerData
+  clientLoader: (
+    args: LoaderArgs<Params> & {
+      serverLoader: () => Promise<DataFrom<RouteModule["serverLoader"]>>
+    },
+  ) => unknown
+  // TODO: clientLoader.hydrate
+  HydrateFallback: (args: { params: Pretty<Params> }) => ReactNode
+
+  serverAction: (args: ActionArgs<Params>) => ServerData
+  clientAction: (
+    args: LoaderArgs<Params> & {
+      serverLoader: () => Promise<DataFrom<RouteModule["serverAction"]>>
+    },
+  ) => unknown
+  default: (args: {
+    params: Pretty<Params>
+    loaderData: LoaderData<
+      DataFrom<RouteModule["serverLoader"]>,
+      DataFrom<RouteModule["clientLoader"]>,
+      false, // TODO
+      IsAny<RouteModule["HydrateFallback"]> extends true ? false : true
+    >
+    actionData?: ActionData<
+      DataFrom<RouteModule["serverAction"]>,
+      DataFrom<RouteModule["clientAction"]>
+    >
+  }) => ReactNode
+  ErrorBoundary: (args: {
+    params: Pretty<Params>
+    error: unknown
+    loaderData?: LoaderData<
+      DataFrom<RouteModule["serverLoader"]>,
+      DataFrom<RouteModule["clientLoader"]>,
+      false, // TODO
+      IsAny<RouteModule["HydrateFallback"]> extends true ? false : true
+    >
+    actionData?: ActionData<
+      DataFrom<RouteModule["serverAction"]>,
+      DataFrom<RouteModule["clientAction"]>
+    >
+  }) => ReactNode
+}

@@ -6,10 +6,15 @@ import type { Config } from "./config"
 import { noext } from "./utils"
 import { getTypesPath } from "./typegen"
 
+type ExportInfo = {
+  start: number
+  length: number
+}
+
 type Splice = {
   index: number
   content: string
-  exportIndex?: number
+  exportInfo?: ExportInfo
 }
 
 const EXPORT_TO_TYPE_CONSTRAINT: Record<string, string | undefined> = {
@@ -52,10 +57,25 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         index: stmt.expression.getStart(sourceFile),
         content: "(",
       })
+
+      const expStart = stmt.getStart(sourceFile)
+      const expMatch = sourceFile
+        .getFullText()
+        .slice(expStart)
+        .match(/^export\s+default\b/)
+      if (!expMatch) {
+        throw Error(
+          `expected /export\\s+default\\b/ at ${filepath}:${expStart}`,
+        )
+      }
+
       splices.push({
         index: stmt.expression.getEnd(),
         content: ") satisfies $autotype.ComponentConstraint",
-        exportIndex: stmt.getStart(sourceFile),
+        exportInfo: {
+          start: expStart,
+          length: expMatch[0].length,
+        },
       })
     } else if (ts.isVariableStatement(stmt)) {
       // BEFORE: export const loader = expr
@@ -79,7 +99,10 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         splices.push({
           index: decl.initializer.getEnd(),
           content: `) satisfies $autotype.${type}`,
-          exportIndex: exp.getStart(sourceFile),
+          exportInfo: {
+            start: exp.getStart(sourceFile),
+            length: exp.getEnd() - exp.getStart(sourceFile),
+          },
         })
       }
     } else if (ts.isFunctionDeclaration(stmt)) {
@@ -103,7 +126,10 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       splices.push({
         index: stmt.body.getEnd(),
         content: `) satisfies $autotype.${type}`,
-        exportIndex: exp.getStart(sourceFile),
+        exportInfo: {
+          start: exp.getStart(sourceFile),
+          length: exp.getEnd() - exp.getStart(sourceFile),
+        },
       })
     }
   })
@@ -146,16 +172,16 @@ export class AutotypedRoute {
 
   toOriginalIndex(splicedIndex: number): {
     index: number
-    exportIndex?: number
+    exportInfo?: ExportInfo
   } {
     let spliceOffset = 0
-    for (let { index, content, exportIndex } of this._splices) {
+    for (let { index, content, exportInfo } of this._splices) {
       // before this splice
       if (splicedIndex < index + spliceOffset) break
 
       // within this splice
       if (splicedIndex < index + spliceOffset + content.length)
-        return { index, exportIndex }
+        return { index, exportInfo }
 
       // after this splice
       spliceOffset += content.length

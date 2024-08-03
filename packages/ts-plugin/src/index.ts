@@ -232,9 +232,9 @@ function getRouteDiagnostics<
     let start = diagnostic.start
     let length = diagnostic.length
     if (start) {
-      const { index, exportIndex } = route.autotyped.toOriginalIndex(start)
-      start = exportIndex === undefined ? index : exportIndex
-      length = exportIndex === undefined ? length : 6
+      const { index, exportInfo } = route.autotyped.toOriginalIndex(start)
+      start = exportInfo?.start ?? index
+      length = exportInfo?.length ?? length
     }
     diagnostics.push({ ...diagnostic, start, length })
   }

@@ -287,17 +287,30 @@ function decorateGetDefinition(ctx: Context) {
     if (!route) return fallback()
 
     const splicedIndex = route.autotyped.toSplicedIndex(index)
-    const definitions = autotype.languageService.getDefinitionAndBoundSpan(
+    const result = autotype.languageService.getDefinitionAndBoundSpan(
       fileName,
       splicedIndex,
     )
-    if (!definitions) return fallback()
+    if (!result) return fallback()
+
     return {
-      ...definitions,
+      ...result,
+      definitions: result.definitions?.map((definition) => {
+        const definitionRoute = autotype.getRoute(definition.fileName)
+        if (!definitionRoute) return definition
+        return {
+          ...definition,
+          textSpan: {
+            ...definition.textSpan,
+            start: definitionRoute.autotyped.toOriginalIndex(
+              definition.textSpan.start,
+            ).index,
+          },
+        }
+      }),
       textSpan: {
-        ...definitions.textSpan,
-        start: route.autotyped.toOriginalIndex(definitions.textSpan.start)
-          .index,
+        ...result.textSpan,
+        start: route.autotyped.toOriginalIndex(result.textSpan.start).index,
       },
     }
   }

@@ -17,17 +17,6 @@ type Splice = {
   exportInfo?: ExportInfo
 }
 
-const EXPORT_TO_TYPE_CONSTRAINT: Record<string, string | undefined> = {
-  links: "LinksConstraint",
-  serverLoader: "ServerLoaderConstraint",
-  clientLoader: "ClientLoaderConstraint",
-  // TODO clientLoaderHydrate
-  HydrateFallback: "HydrateFallbackConstraint",
-  serverAction: "ServerActionConstraint",
-  clientAction: "ClientActionConstraint",
-  ErrorBoundary: "ErrorBoundaryConstraint",
-}
-
 export function autotypeRoute(config: Config, filepath: string, code: string) {
   const sourceFile = ts.createSourceFile(
     filepath,
@@ -71,7 +60,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
 
       splices.push({
         index: stmt.expression.getEnd(),
-        content: ") satisfies $autotype.ComponentConstraint",
+        content: ") satisfies $autotype._default",
         exportInfo: {
           start: expStart,
           length: expMatch[0].length,
@@ -86,8 +75,6 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       for (let decl of stmt.declarationList.declarations) {
         if (!ts.isIdentifier(decl.name)) continue
         if (decl.initializer === undefined) continue
-        let type = EXPORT_TO_TYPE_CONSTRAINT[decl.name.text]
-        if (!type) continue
         splices.push({
           index: stmt.getStart(sourceFile),
           content: `\n/** docs for ${decl.name.text} go here */\n`,
@@ -98,7 +85,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         })
         splices.push({
           index: decl.initializer.getEnd(),
-          content: `) satisfies $autotype.${type}`,
+          content: `) satisfies $autotype.${decl.name.text}`,
           exportInfo: {
             start: exp.getStart(sourceFile),
             length: exp.getEnd() - exp.getStart(sourceFile),
@@ -112,8 +99,6 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       let exp = exported(stmt)
       if (!exp) return
       if (!stmt.name) return
-      let type = EXPORT_TO_TYPE_CONSTRAINT[stmt.name.text]
-      if (!type) return
       if (!stmt.body) return
       splices.push({
         index: stmt.getStart(sourceFile),
@@ -125,7 +110,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       })
       splices.push({
         index: stmt.body.getEnd(),
-        content: `) satisfies $autotype.${type}`,
+        content: `) satisfies $autotype.${stmt.name.text}`,
         exportInfo: {
           start: exp.getStart(sourceFile),
           length: exp.getEnd() - exp.getStart(sourceFile),

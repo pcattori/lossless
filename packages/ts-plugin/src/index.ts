@@ -289,6 +289,14 @@ function decorateGetDefinition(ctx: Context) {
     if (!route) return fallback()
 
     const splicedIndex = route.autotyped.toSplicedIndex(index)
+    const exportTypeDefinitions = getRouteDefaultExportTypeDefinitions(
+      ctx,
+      autotype.languageService,
+      fileName,
+      splicedIndex,
+    )
+    if (exportTypeDefinitions) return exportTypeDefinitions
+
     const result = autotype.languageService.getDefinitionAndBoundSpan(
       fileName,
       splicedIndex,
@@ -316,6 +324,33 @@ function decorateGetDefinition(ctx: Context) {
       },
     }
   }
+}
+
+function getRouteDefaultExportTypeDefinitions(
+  ctx: Context,
+  autotype: ts.LanguageService,
+  fileName: string,
+  splicedIndex: number,
+) {
+  const autotypeSourceFile = autotype.getProgram()?.getSourceFile(fileName)
+  if (!autotypeSourceFile) return
+  const node = findNodeAtPosition(autotypeSourceFile, splicedIndex)
+  if (!node) return
+  if (node.kind !== ctx.ts.SyntaxKind.DefaultKeyword) return
+  const { parent } = node
+  if (!ctx.ts.isExportAssignment(parent)) return
+  const { expression } = parent
+  if (!ctx.ts.isSatisfiesExpression(expression)) return
+  const { type } = expression
+  if (!ctx.ts.isTypeReferenceNode(type)) return
+  const { typeName } = type
+  if (!ctx.ts.isQualifiedName(typeName)) return
+
+  const result = autotype.getDefinitionAndBoundSpan(
+    fileName,
+    typeName.right.getStart(),
+  )
+  return result
 }
 
 // inlay hints
@@ -348,4 +383,21 @@ function decorateInlayHints(ctx: Context): void {
         position: route.autotyped.toOriginalIndex(hint.position).index,
       }))
   }
+}
+
+// utils
+// ----------------------------------------------------------------------------
+
+function findNodeAtPosition(node: ts.Node, pos: number): ts.Node | undefined {
+  if (pos < node.getStart() || node.getEnd() < pos) return
+  for (const child of node.getChildren()) {
+    if (pos < child.getStart()) return
+    if (pos > child.getEnd()) continue
+
+    const found = findNodeAtPosition(child, pos)
+    if (found) return found
+
+    return child
+  }
+  return node
 }

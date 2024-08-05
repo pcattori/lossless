@@ -289,35 +289,40 @@ function decorateGetDefinition(ctx: Context) {
     if (!route) return fallback()
 
     const splicedIndex = route.autotyped.toSplicedIndex(index)
-    const exportTypeDefinitions = getRouteDefaultExportTypeDefinitions(
+
+    const exportTypeDefinitions = getRouteExportTypeDefinitions(
       ctx,
       autotype.languageService,
       fileName,
       splicedIndex,
     )
-    if (exportTypeDefinitions) return exportTypeDefinitions
 
     const result = autotype.languageService.getDefinitionAndBoundSpan(
       fileName,
       splicedIndex,
     )
-    if (!result) return fallback()
+    if (!result) return exportTypeDefinitions ?? fallback()
+
+    let definitions = result.definitions?.map((definition) => {
+      const definitionRoute = autotype.getRoute(definition.fileName)
+      if (!definitionRoute) return definition
+      return {
+        ...definition,
+        textSpan: {
+          ...definition.textSpan,
+          start: definitionRoute.autotyped.toOriginalIndex(
+            definition.textSpan.start,
+          ).index,
+        },
+      }
+    })
+    definitions = [
+      ...(definitions ?? []),
+      ...(exportTypeDefinitions?.definitions ?? []),
+    ]
 
     return {
-      ...result,
-      definitions: result.definitions?.map((definition) => {
-        const definitionRoute = autotype.getRoute(definition.fileName)
-        if (!definitionRoute) return definition
-        return {
-          ...definition,
-          textSpan: {
-            ...definition.textSpan,
-            start: definitionRoute.autotyped.toOriginalIndex(
-              definition.textSpan.start,
-            ).index,
-          },
-        }
-      }),
+      definitions: definitions?.length > 0 ? definitions : undefined,
       textSpan: {
         ...result.textSpan,
         start: route.autotyped.toOriginalIndex(result.textSpan.start).index,
@@ -326,7 +331,7 @@ function decorateGetDefinition(ctx: Context) {
   }
 }
 
-function getRouteDefaultExportTypeDefinitions(
+function getRouteExportTypeDefinitions(
   ctx: Context,
   autotype: ts.LanguageService,
   fileName: string,
@@ -336,21 +341,58 @@ function getRouteDefaultExportTypeDefinitions(
   if (!autotypeSourceFile) return
   const node = findNodeAtPosition(autotypeSourceFile, splicedIndex)
   if (!node) return
+
+  const type =
+    getRouteDefaultExportTypeDefinitions(ctx, node) ??
+    getRouteNamedExportTypeDefinitions(ctx, node)
+
+  if (!type) return
+  return autotype.getDefinitionAndBoundSpan(fileName, type.getStart())
+}
+
+function getRouteDefaultExportTypeDefinitions(ctx: Context, node: ts.Node) {
   if (node.kind !== ctx.ts.SyntaxKind.DefaultKeyword) return
+
   const { parent } = node
   if (!ctx.ts.isExportAssignment(parent)) return
+
   const { expression } = parent
   if (!ctx.ts.isSatisfiesExpression(expression)) return
+
   const { type } = expression
   if (!ctx.ts.isTypeReferenceNode(type)) return
+
   const { typeName } = type
   if (!ctx.ts.isQualifiedName(typeName)) return
 
-  const result = autotype.getDefinitionAndBoundSpan(
-    fileName,
-    typeName.right.getStart(),
+  return typeName.right
+}
+
+function getRouteNamedExportTypeDefinitions(ctx: Context, node: ts.Node) {
+  const varDecl = node.parent
+  if (!ctx.ts.isVariableDeclaration(varDecl)) return
+
+  const varDeclList = varDecl.parent
+  if (!ctx.ts.isVariableDeclarationList(varDeclList)) return
+
+  const varStmt = varDeclList.parent
+  if (!ctx.ts.isVariableStatement(varStmt)) return
+
+  const exported = varStmt.modifiers?.find(
+    (m) => m.kind === ctx.ts.SyntaxKind.ExportKeyword,
   )
-  return result
+  if (!exported) return
+
+  const { initializer } = varDecl
+  if (!initializer) return
+  if (!ctx.ts.isSatisfiesExpression(initializer)) return
+
+  const { type } = initializer
+  if (!ctx.ts.isTypeReferenceNode(type)) return
+
+  const { typeName } = type
+  if (!ctx.ts.isQualifiedName(typeName)) return
+  return typeName.right
 }
 
 // inlay hints

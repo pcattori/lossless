@@ -232,10 +232,11 @@ function getRouteDiagnostics<
   for (let diagnostic of autotype.languageService[methodName](fileName)) {
     let start = diagnostic.start
     let length = diagnostic.length
+
     if (start) {
-      const { index, exportInfo } = route.autotyped.toOriginalIndex(start)
-      start = exportInfo?.start ?? index
-      length = exportInfo?.length ?? length
+      const { index, exportName } = route.autotyped.toOriginalIndex(start)
+      start = exportName?.start ?? index
+      length = exportName?.length ?? length
     }
     diagnostics.push({ ...diagnostic, start, length })
   }

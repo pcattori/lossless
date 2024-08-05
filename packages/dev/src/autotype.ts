@@ -6,7 +6,7 @@ import type { Config } from "./config"
 import { noext } from "./utils"
 import { getTypesPath } from "./typegen"
 
-type ExportInfo = {
+type ExportName = {
   start: number
   length: number
 }
@@ -14,7 +14,7 @@ type ExportInfo = {
 type Splice = {
   index: number
   content: string
-  exportInfo?: ExportInfo
+  exportName?: ExportName
 }
 
 export function autotypeRoute(config: Config, filepath: string, code: string) {
@@ -42,10 +42,6 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         index: stmt.getStart(sourceFile),
         content: "\n/** docs for default export go here */\n",
       })
-      splices.push({
-        index: stmt.expression.getStart(sourceFile),
-        content: "(",
-      })
 
       const expStart = stmt.getStart(sourceFile)
       const expMatch = sourceFile
@@ -57,14 +53,19 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
           `expected /export\\s+default\\b/ at ${filepath}:${expStart}`,
         )
       }
-
+      const exportName = {
+        start: expStart + (expMatch[0].length - 7),
+        length: 7,
+      }
+      splices.push({
+        index: stmt.expression.getStart(sourceFile),
+        content: "(",
+        exportName,
+      })
       splices.push({
         index: stmt.expression.getEnd(),
         content: ") satisfies $autotype._default",
-        exportInfo: {
-          start: expStart,
-          length: expMatch[0].length,
-        },
+        exportName,
       })
     } else if (ts.isVariableStatement(stmt)) {
       // BEFORE: export const loader = expr
@@ -79,17 +80,21 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
           index: stmt.getStart(sourceFile),
           content: `\n/** docs for ${decl.name.text} go here */\n`,
         })
+
+        const exportName = {
+          start: decl.name.getStart(sourceFile),
+          length: decl.name.getWidth(sourceFile),
+        }
         splices.push({
           index: decl.initializer.getStart(sourceFile),
           content: "(",
+          exportName,
         })
+
         splices.push({
           index: decl.initializer.getEnd(),
           content: `) satisfies $autotype.${decl.name.text}`,
-          exportInfo: {
-            start: exp.getStart(sourceFile),
-            length: exp.getEnd() - exp.getStart(sourceFile),
-          },
+          exportName,
         })
       }
     } else if (ts.isFunctionDeclaration(stmt)) {
@@ -104,17 +109,20 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
         index: stmt.getStart(sourceFile),
         content: `\n/** docs for ${stmt.name.text} go here */\n`,
       })
+
+      const exportName = {
+        start: stmt.name.getStart(sourceFile),
+        length: stmt.name.getWidth(sourceFile),
+      }
       splices.push({
         index: exp.getEnd() + 1, // TODO: account for more whitespace
         content: `const ${stmt.name.text} = (`,
+        exportName,
       })
       splices.push({
         index: stmt.body.getEnd(),
         content: `) satisfies $autotype.${stmt.name.text}`,
-        exportInfo: {
-          start: exp.getStart(sourceFile),
-          length: exp.getEnd() - exp.getStart(sourceFile),
-        },
+        exportName,
       })
     }
   })
@@ -157,16 +165,16 @@ export class AutotypedRoute {
 
   toOriginalIndex(splicedIndex: number): {
     index: number
-    exportInfo?: ExportInfo
+    exportName?: ExportName
   } {
     let spliceOffset = 0
-    for (let { index, content, exportInfo } of this._splices) {
+    for (let { index, content, exportName } of this._splices) {
       // before this splice
       if (splicedIndex < index + spliceOffset) break
 
       // within this splice
       if (splicedIndex < index + spliceOffset + content.length)
-        return { index, exportInfo }
+        return { index, exportName }
 
       // after this splice
       spliceOffset += content.length

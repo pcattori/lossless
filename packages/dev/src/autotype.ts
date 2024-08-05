@@ -5,6 +5,7 @@ import ts from "typescript"
 import type { Config } from "./config"
 import { noext } from "./utils"
 import { getTypesPath } from "./typegen"
+import { routeExports } from "./route-exports"
 
 type ExportName = {
   start: number
@@ -38,10 +39,13 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       if (stmt.isExportEquals === true) {
         throw Error(`Unexpected 'export  =' in '${filepath}'`)
       }
-      splices.push({
-        index: stmt.getStart(sourceFile),
-        content: "\n/** docs for default export go here */\n",
-      })
+      const jsdoc = routeExports["default"]?.jsdoc
+      if (jsdoc) {
+        splices.push({
+          index: stmt.getStart(sourceFile),
+          content: `\n${jsdoc}\n`,
+        })
+      }
 
       const expStart = stmt.getStart(sourceFile)
       const expMatch = sourceFile
@@ -76,10 +80,14 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       for (let decl of stmt.declarationList.declarations) {
         if (!ts.isIdentifier(decl.name)) continue
         if (decl.initializer === undefined) continue
-        splices.push({
-          index: stmt.getStart(sourceFile),
-          content: `\n/** docs for ${decl.name.text} go here */\n`,
-        })
+
+        const jsdoc = routeExports[decl.name.text]?.jsdoc
+        if (jsdoc) {
+          splices.push({
+            index: stmt.getStart(sourceFile),
+            content: `\n${jsdoc}\n`,
+          })
+        }
 
         const exportName = {
           start: decl.name.getStart(sourceFile),
@@ -105,10 +113,14 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       if (!exp) return
       if (!stmt.name) return
       if (!stmt.body) return
-      splices.push({
-        index: stmt.getStart(sourceFile),
-        content: `\n/** docs for ${stmt.name.text} go here */\n`,
-      })
+
+      const jsdoc = routeExports[stmt.name.text]?.jsdoc
+      if (jsdoc) {
+        splices.push({
+          index: stmt.getStart(sourceFile),
+          content: `\n/** docs for ${stmt.name.text} go here */\n`,
+        })
+      }
 
       const exportName = {
         start: stmt.name.getStart(sourceFile),

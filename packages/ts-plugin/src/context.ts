@@ -6,4 +6,7 @@ export type Context = {
   ls: ts.LanguageService
   info: ts.server.PluginCreateInfo
   ts: typeof ts
+  logger: {
+    info: (message: string) => void
+  }
 }

@@ -26,7 +26,8 @@ function init(modules: { typescript: TS }) {
     })
 
     const ls = info.languageService
-    const ctx: Context = { config, ls, info, ts }
+    const { logger } = info.project.projectService
+    const ctx: Context = { config, ls, info, ts, logger }
 
     decorateGetDefinition(ctx)
     decorateHover(ctx)

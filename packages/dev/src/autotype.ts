@@ -115,12 +115,6 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       if (!stmt.body) return
 
       const jsdoc = routeExports[stmt.name.text]?.jsdoc
-      if (jsdoc) {
-        splices.push({
-          index: stmt.getStart(sourceFile),
-          content: `\n/** docs for ${stmt.name.text} go here */\n`,
-        })
-      }
 
       const exportName = {
         start: stmt.name.getStart(sourceFile),
@@ -128,7 +122,7 @@ export function autotypeRoute(config: Config, filepath: string, code: string) {
       }
       splices.push({
         index: exp.getEnd() + 1, // TODO: account for more whitespace
-        content: `const ${stmt.name.text} = (`,
+        content: `const ${stmt.name.text} = (` + (jsdoc ? jsdoc + "\n" : ""),
         exportName,
       })
       splices.push({

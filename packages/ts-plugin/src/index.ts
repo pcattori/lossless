@@ -17,16 +17,16 @@ function init(modules: { typescript: TS }) {
   const ts = modules.typescript
 
   function create(info: ts.server.PluginCreateInfo) {
-    info.project.projectService.logger.info("[@lossless/ts-plugin] setup")
+    const { logger } = info.project.projectService
+    logger.info("[@lossless/ts-plugin] setup")
 
     const config = getConfig(info.project)
     if (!config) return
     typegenWatch(config, (msg) => {
-      info.project.projectService.logger.info("[@lossless/ts-plugin] " + msg)
+      logger.info("[@lossless/ts-plugin] " + msg)
     })
 
     const ls = info.languageService
-    const { logger } = info.project.projectService
     const ctx: Context = { config, ls, info, ts, logger }
 
     decorateGetDefinition(ctx)
@@ -369,30 +369,64 @@ function getRouteDefaultExportTypeDefinitions(ctx: Context, node: ts.Node) {
 }
 
 function getRouteNamedExportTypeDefinitions(ctx: Context, node: ts.Node) {
-  const varDecl = node.parent
-  if (!ctx.ts.isVariableDeclaration(varDecl)) return
+  if (!ctx.ts.isIdentifier(node)) return
 
-  const varDeclList = varDecl.parent
-  if (!ctx.ts.isVariableDeclarationList(varDeclList)) return
+  if (ctx.ts.isVariableDeclaration(node.parent)) {
+    const varDecl = node.parent
 
-  const varStmt = varDeclList.parent
-  if (!ctx.ts.isVariableStatement(varStmt)) return
+    const varDeclList = varDecl.parent
+    if (!ctx.ts.isVariableDeclarationList(varDeclList)) return
 
-  const exported = varStmt.modifiers?.find(
-    (m) => m.kind === ctx.ts.SyntaxKind.ExportKeyword,
-  )
-  if (!exported) return
+    const varStmt = varDeclList.parent
+    if (!ctx.ts.isVariableStatement(varStmt)) return
 
-  const { initializer } = varDecl
-  if (!initializer) return
-  if (!ctx.ts.isSatisfiesExpression(initializer)) return
+    const exported = varStmt.modifiers?.find(
+      (m) => m.kind === ctx.ts.SyntaxKind.ExportKeyword,
+    )
+    if (!exported) return
 
-  const { type } = initializer
-  if (!ctx.ts.isTypeReferenceNode(type)) return
+    const { initializer } = varDecl
+    if (!initializer) return
+    if (!ctx.ts.isSatisfiesExpression(initializer)) return
 
-  const { typeName } = type
-  if (!ctx.ts.isQualifiedName(typeName)) return
-  return typeName.right
+    const { type } = initializer
+    if (!ctx.ts.isTypeReferenceNode(type)) return
+
+    const { typeName } = type
+    if (!ctx.ts.isQualifiedName(typeName)) return
+    return typeName.right
+  }
+
+  if (ctx.ts.isFunctionExpression(node.parent)) {
+    const fnExpr = node.parent
+
+    const parenExpr = fnExpr.parent
+    if (!ctx.ts.isParenthesizedExpression(parenExpr)) return
+
+    const satisfiesExpr = parenExpr.parent
+    if (!ctx.ts.isSatisfiesExpression(satisfiesExpr)) return
+
+    const varDecl = satisfiesExpr.parent
+    if (!ctx.ts.isVariableDeclaration(varDecl)) return
+
+    const varDeclList = varDecl.parent
+    if (!ctx.ts.isVariableDeclarationList(varDeclList)) return
+
+    const varStmt = varDeclList.parent
+    if (!ctx.ts.isVariableStatement(varStmt)) return
+
+    const exported = varStmt.modifiers?.find(
+      (m) => m.kind === ctx.ts.SyntaxKind.ExportKeyword,
+    )
+    if (!exported) return
+
+    const { type } = satisfiesExpr
+    if (!ctx.ts.isTypeReferenceNode(type)) return
+
+    const { typeName } = type
+    if (!ctx.ts.isQualifiedName(typeName)) return
+    return typeName.right
+  }
 }
 
 // inlay hints

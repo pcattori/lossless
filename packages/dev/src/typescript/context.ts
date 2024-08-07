@@ -4,7 +4,8 @@ import type { Config } from "../config"
 
 export type Context = {
   config: Config
-  info: ts.server.PluginCreateInfo
+  languageService: ts.LanguageService
+  languageServiceHost: ts.LanguageServiceHost
   ts: typeof ts
   logger: {
     info: (message: string) => void

@@ -2,8 +2,7 @@ import ts from "typescript"
 import * as path from "node:path"
 
 import type { Config } from "../config"
-import { getRoutes } from "../routes"
-import { autotypeRoute } from "./autotype"
+import { decorateLanguageService } from "./language-service"
 
 function parseTsconfig(config: Config): ts.ParsedCommandLine {
   const configPath = ts.findConfigFile(
@@ -23,24 +22,50 @@ function parseTsconfig(config: Config): ts.ParsedCommandLine {
   )
 }
 
-export async function typecheck(config: Config) {
-  const routes = getRoutes(config)
-
+export function typecheck(config: Config) {
   const { fileNames, options } = parseTsconfig(config)
-  const host = ts.createCompilerHost(options)
-  const originalReadFile = host.readFile
-  host.readFile = (fileName: string) => {
-    const content = originalReadFile(fileName)
-    const route = routes.get(fileName)
-    if (content && route) {
-      return autotypeRoute(config, fileName, content).code()
-    }
-    return content
-  }
-  const program = ts.createProgram(fileNames, options, host)
 
-  const diagnostics = ts.getPreEmitDiagnostics(program)
-  if (diagnostics.length > 0) {
+  const host: ts.LanguageServiceHost = {
+    getScriptFileNames: () => fileNames,
+    getScriptVersion: () => "0",
+    getScriptSnapshot: (fileName) => {
+      const content = ts.sys.readFile(fileName)
+      if (!content) return
+      return ts.ScriptSnapshot.fromString(content)
+    },
+    getCurrentDirectory: () => process.cwd(), // TODO
+    getCompilationSettings: () => options,
+    getDefaultLibFileName: ts.getDefaultLibFilePath,
+    fileExists: ts.sys.fileExists,
+    readFile: ts.sys.readFile,
+    readDirectory: ts.sys.readDirectory,
+  }
+  const ls = ts.createLanguageService(host)
+  decorateLanguageService({
+    config,
+    languageService: ls,
+    languageServiceHost: host,
+    ts,
+    logger: console,
+  })
+  const program = ts.createProgram(fileNames, options)
+
+  let diagnostics: ts.Diagnostic[] = []
+  for (const sourceFile of program.getSourceFiles()) {
+    if (sourceFile.isDeclarationFile) continue
+    diagnostics = diagnostics.concat(
+      ls.getSyntacticDiagnostics(sourceFile.fileName).map((d) => {
+        d.file = sourceFile
+        return d
+      }),
+      ls.getSemanticDiagnostics(sourceFile.fileName).map((d) => {
+        d.file = sourceFile
+        return d
+      }),
+    )
+  }
+
+  if (diagnostics) {
     const formattedDiagnostics = ts.formatDiagnosticsWithColorAndContext(
       diagnostics,
       {
@@ -49,8 +74,6 @@ export async function typecheck(config: Config) {
         getNewLine: () => ts.sys.newLine,
       },
     )
-    console.log(formattedDiagnostics)
-
     const errorCount = diagnostics.filter(
       (d) => d.category === ts.DiagnosticCategory.Error,
     ).length
@@ -60,6 +83,8 @@ export async function typecheck(config: Config) {
     console.log(
       `Found ${errorCount} error${errorCount === 1 ? "" : "s"} and ${warningCount} warning${warningCount === 1 ? "" : "s"}.`,
     )
+
+    console.log(formattedDiagnostics)
   } else {
     console.log(
       "\x1b[36m%s\x1b[0m",

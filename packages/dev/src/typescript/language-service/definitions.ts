@@ -4,7 +4,7 @@ import { getAutotypeLanguageService } from "../autotype"
 import { type Context } from "../context"
 
 export function decorateGetDefinition(ctx: Context) {
-  const ls = ctx.info.languageService
+  const ls = ctx.languageService
   const { getDefinitionAndBoundSpan } = ls
   ls.getDefinitionAndBoundSpan = (fileName, index) => {
     const fallback = () => getDefinitionAndBoundSpan(fileName, index)

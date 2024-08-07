@@ -9,7 +9,7 @@ let cli = cac("lossless")
 cli.command("typecheck").action(async () => {
   const config: Config = { appDirectory: process.cwd() }
   typegen.writeAll(config)
-  await typecheck(config)
+  typecheck(config)
 })
 
 cli.command("typegen").action(async () => {

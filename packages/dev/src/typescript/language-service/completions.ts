@@ -2,7 +2,7 @@ import { getAutotypeLanguageService } from "../autotype"
 import { type Context } from "../context"
 
 export function decorateCompletions(ctx: Context) {
-  const ls = ctx.info.languageService
+  const ls = ctx.languageService
   const { getCompletionsAtPosition } = ls
   ls.getCompletionsAtPosition = (fileName, index, options, settings) => {
     const fallback = () =>

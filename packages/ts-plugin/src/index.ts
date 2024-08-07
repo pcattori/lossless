@@ -22,7 +22,8 @@ function init(modules: { typescript: typeof ts }) {
 
     decorateLanguageService({
       config,
-      info,
+      languageService: info.languageService,
+      languageServiceHost: info.languageServiceHost,
       ts: modules.typescript,
       logger,
     })

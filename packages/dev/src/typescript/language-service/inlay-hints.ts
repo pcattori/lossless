@@ -2,7 +2,7 @@ import { getAutotypeLanguageService } from "../autotype"
 import { type Context } from "../context"
 
 export function decorateInlayHints(ctx: Context): void {
-  const ls = ctx.info.languageService
+  const ls = ctx.languageService
   const { provideInlayHints } = ls
   ls.provideInlayHints = (fileName, span, preferences) => {
     const fallback = () => provideInlayHints(fileName, span, preferences)

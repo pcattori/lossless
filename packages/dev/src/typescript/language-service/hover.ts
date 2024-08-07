@@ -2,7 +2,7 @@ import { getAutotypeLanguageService } from "../autotype"
 import { type Context } from "../context"
 
 export function decorateHover(ctx: Context) {
-  const ls = ctx.info.languageService
+  const ls = ctx.languageService
   const { getQuickInfoAtPosition } = ls
   ls.getQuickInfoAtPosition = (fileName: string, index: number) => {
     const fallback = () => getQuickInfoAtPosition(fileName, index)

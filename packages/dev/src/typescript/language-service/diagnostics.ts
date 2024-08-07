@@ -4,7 +4,7 @@ import { getAutotypeLanguageService } from "../autotype"
 import { type Context } from "../context"
 
 export function decorateDiagnostics(ctx: Context) {
-  const ls = ctx.info.languageService
+  const ls = ctx.languageService
   const { getSyntacticDiagnostics } = ls
   ls.getSyntacticDiagnostics = (fileName: string) => {
     return (

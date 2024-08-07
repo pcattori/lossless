@@ -19,19 +19,15 @@ type RouteModule = {
 
 const FORCE_UPDATE_VERSION = "FORCE_UPDATE_VERSION"
 
-const CACHE = new WeakMap<
-  ts.server.PluginCreateInfo,
-  {
-    languageService: ts.LanguageService
-    getRoute: (fileName: string) => RouteModule | undefined
-  } | null
->()
+let CACHED: {
+  languageService: ts.LanguageService
+  getRoute: (fileName: string) => RouteModule | undefined
+} | null = null
 
 export function getAutotypeLanguageService(ctx: Context) {
-  const cached = CACHE.get(ctx.info)
-  if (cached) return cached
+  if (CACHED) return CACHED
 
-  const host = ctx.info.languageServiceHost
+  const host = ctx.languageServiceHost
 
   class AutotypeLanguageServiceHost implements ts.LanguageServiceHost {
     private routes: Record<string, RouteModule> = {}
@@ -103,7 +99,7 @@ export function getAutotypeLanguageService(ctx: Context) {
     upsertRouteFile(fileName: string) {
       const route = getRoutes(ctx.config).get(fileName)
       if (!route) return
-      const sourceFile = ctx.info.languageService
+      const sourceFile = ctx.languageService
         .getProgram()
         ?.getSourceFile(fileName)
       if (!sourceFile) return
@@ -145,9 +141,8 @@ export function getAutotypeLanguageService(ctx: Context) {
   }
 
   const languageService = ts.createLanguageService(autotypeHost)
-  const result = { languageService, getRoute }
-  CACHE.set(ctx.info, result)
-  return result
+  CACHED = { languageService, getRoute }
+  return CACHED
 }
 
 type ExportName = {
@@ -161,7 +156,7 @@ type Splice = {
   exportName?: ExportName
 }
 
-export function autotypeRoute(config: Config, filepath: string, code: string) {
+function autotypeRoute(config: Config, filepath: string, code: string) {
   const sourceFile = ts.createSourceFile(
     filepath,
     code,

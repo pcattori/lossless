@@ -4,34 +4,29 @@ import type ts from "typescript/lib/tsserverlibrary"
 
 import {
   type Config,
-  type Context,
   typegenWatch,
   decorateLanguageService,
 } from "@lossless/dev"
 
-type TS = typeof ts
-
 // plugin
 // ----------------------------------------------------------------------------
 
-function init(modules: { typescript: TS }) {
-  const ts = modules.typescript
-
+function init(modules: { typescript: typeof ts }) {
   function create(info: ts.server.PluginCreateInfo) {
     const { logger } = info.project.projectService
     logger.info("[@lossless/ts-plugin] setup")
 
     const config = getConfig(info.project)
     if (!config) return
-    typegenWatch(config, (msg) => {
-      logger.info("[@lossless/ts-plugin] " + msg)
+    typegenWatch(config, (msg) => logger.info("[@lossless/ts-plugin] " + msg))
+
+    decorateLanguageService({
+      config,
+      info,
+      ts: modules.typescript,
+      logger,
     })
-
-    const ls = info.languageService
-    const ctx: Context = { config, ls, info, ts, logger }
-
-    decorateLanguageService(ctx)
-    return ls
+    return info.languageService
   }
 
   return { create }

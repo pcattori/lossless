@@ -17,8 +17,9 @@ export function decorateLanguageService(ctx: Context) {
 // ----------------------------------------------------------------------------
 
 function decorateCompletions(ctx: Context) {
-  const { getCompletionsAtPosition } = ctx.ls
-  ctx.ls.getCompletionsAtPosition = (fileName, index, options, settings) => {
+  const ls = ctx.info.languageService
+  const { getCompletionsAtPosition } = ls
+  ls.getCompletionsAtPosition = (fileName, index, options, settings) => {
     const fallback = () =>
       getCompletionsAtPosition(fileName, index, options, settings)
 
@@ -61,8 +62,8 @@ function decorateCompletions(ctx: Context) {
     return completions
   }
 
-  const { getCompletionEntryDetails } = ctx.ls
-  ctx.ls.getCompletionEntryDetails = (
+  const { getCompletionEntryDetails } = ls
+  ls.getCompletionEntryDetails = (
     fileName,
     position,
     entryName,
@@ -118,8 +119,8 @@ function decorateCompletions(ctx: Context) {
     return details
   }
 
-  const { getSignatureHelpItems } = ctx.ls
-  ctx.ls.getSignatureHelpItems = (fileName, position, options) => {
+  const { getSignatureHelpItems } = ls
+  ls.getSignatureHelpItems = (fileName, position, options) => {
     const fallback = () => getSignatureHelpItems(fileName, position, options)
 
     const autotype = getAutotypeLanguageService(ctx)
@@ -140,24 +141,25 @@ function decorateCompletions(ctx: Context) {
 // ----------------------------------------------------------------------------
 
 function decorateDiagnostics(ctx: Context) {
-  const { getSyntacticDiagnostics } = ctx.ls
-  ctx.ls.getSyntacticDiagnostics = (fileName: string) => {
+  const ls = ctx.info.languageService
+  const { getSyntacticDiagnostics } = ls
+  ls.getSyntacticDiagnostics = (fileName: string) => {
     return (
       getRouteDiagnostics(ctx, "getSyntacticDiagnostics", fileName) ??
       getSyntacticDiagnostics(fileName)
     )
   }
 
-  const { getSemanticDiagnostics } = ctx.ls
-  ctx.ls.getSemanticDiagnostics = (fileName: string) => {
+  const { getSemanticDiagnostics } = ls
+  ls.getSemanticDiagnostics = (fileName: string) => {
     return (
       getRouteDiagnostics(ctx, "getSemanticDiagnostics", fileName) ??
       getSemanticDiagnostics(fileName)
     )
   }
 
-  const { getSuggestionDiagnostics } = ctx.ls
-  ctx.ls.getSuggestionDiagnostics = (fileName: string) => {
+  const { getSuggestionDiagnostics } = ls
+  ls.getSuggestionDiagnostics = (fileName: string) => {
     return (
       getRouteDiagnostics(ctx, "getSuggestionDiagnostics", fileName) ??
       getSuggestionDiagnostics(fileName)
@@ -201,8 +203,9 @@ function getRouteDiagnostics<
 // ----------------------------------------------------------------------------
 
 function decorateHover(ctx: Context) {
-  const { getQuickInfoAtPosition } = ctx.ls
-  ctx.ls.getQuickInfoAtPosition = (fileName: string, index: number) => {
+  const ls = ctx.info.languageService
+  const { getQuickInfoAtPosition } = ls
+  ls.getQuickInfoAtPosition = (fileName: string, index: number) => {
     const fallback = () => getQuickInfoAtPosition(fileName, index)
 
     const autotype = getAutotypeLanguageService(ctx)
@@ -231,8 +234,9 @@ function decorateHover(ctx: Context) {
 // ----------------------------------------------------------------------------
 
 function decorateGetDefinition(ctx: Context) {
-  const { getDefinitionAndBoundSpan } = ctx.ls
-  ctx.ls.getDefinitionAndBoundSpan = (fileName, index) => {
+  const ls = ctx.info.languageService
+  const { getDefinitionAndBoundSpan } = ls
+  ls.getDefinitionAndBoundSpan = (fileName, index) => {
     const fallback = () => getDefinitionAndBoundSpan(fileName, index)
 
     const autotype = getAutotypeLanguageService(ctx)
@@ -386,8 +390,9 @@ function getRouteNamedExportTypeDefinitions(ctx: Context, node: ts.Node) {
 // ----------------------------------------------------------------------------
 
 function decorateInlayHints(ctx: Context): void {
-  const { provideInlayHints } = ctx.ls
-  ctx.ls.provideInlayHints = (fileName, span, preferences) => {
+  const ls = ctx.info.languageService
+  const { provideInlayHints } = ls
+  ls.provideInlayHints = (fileName, span, preferences) => {
     const fallback = () => provideInlayHints(fileName, span, preferences)
 
     const autotype = getAutotypeLanguageService(ctx)

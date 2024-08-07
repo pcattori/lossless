@@ -21,14 +21,8 @@ export function typecheck(config: Config) {
   for (const sourceFile of program.getSourceFiles()) {
     if (sourceFile.isDeclarationFile) continue
     diagnostics = diagnostics.concat(
-      languageService.getSyntacticDiagnostics(sourceFile.fileName).map((d) => {
-        d.file = sourceFile
-        return d
-      }),
-      languageService.getSemanticDiagnostics(sourceFile.fileName).map((d) => {
-        d.file = sourceFile
-        return d
-      }),
+      languageService.getSyntacticDiagnostics(sourceFile.fileName),
+      languageService.getSemanticDiagnostics(sourceFile.fileName),
     )
   }
 

@@ -56,7 +56,12 @@ function getRouteDiagnostics<
       start = exportName?.start ?? index
       length = exportName?.length ?? length
     }
-    diagnostics.push({ ...diagnostic, start, length })
+    diagnostics.push({
+      ...diagnostic,
+      start,
+      length,
+      file: ctx.languageService.getProgram()?.getSourceFile(fileName),
+    })
   }
   // @ts-expect-error
   return diagnostics

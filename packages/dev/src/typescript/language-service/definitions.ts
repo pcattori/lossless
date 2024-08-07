@@ -17,10 +17,7 @@ export function decorateGetDefinition(ctx: Context) {
 
     const splicedIndex = route.autotyped.toSplicedIndex(index)
 
-    const result = autotype.languageService.getDefinitionAndBoundSpan(
-      fileName,
-      splicedIndex,
-    )
+    const result = autotype.getDefinitionAndBoundSpan(fileName, splicedIndex)
     if (!result) return fallback()
 
     return {
@@ -52,7 +49,7 @@ export function decorateGetDefinition(ctx: Context) {
     )
     if (exportTypeDefinitions) return exportTypeDefinitions
 
-    const definitions = autotype.languageService.getTypeDefinitionAtPosition(
+    const definitions = autotype.getTypeDefinitionAtPosition(
       fileName,
       splicedIndex,
     )
@@ -68,9 +65,7 @@ function getRouteExportTypeDefinitions(
   fileName: string,
   splicedIndex: number,
 ) {
-  const autotypeSourceFile = autotype.languageService
-    .getProgram()
-    ?.getSourceFile(fileName)
+  const autotypeSourceFile = autotype.getProgram()?.getSourceFile(fileName)
   if (!autotypeSourceFile) return
   const node = findNodeAtPosition(autotypeSourceFile, splicedIndex)
   if (!node) return
@@ -80,7 +75,7 @@ function getRouteExportTypeDefinitions(
     getRouteNamedExportTypeDefinitions(ctx, node)
 
   if (!type) return
-  return autotype.languageService
+  return autotype
     .getTypeDefinitionAtPosition(fileName, type.getStart())
     ?.map(toOriginalIndex(autotype))
 }

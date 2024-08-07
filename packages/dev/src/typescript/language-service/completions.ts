@@ -15,7 +15,7 @@ export function decorateCompletions(ctx: Context) {
     if (!route) return fallback()
 
     const splicedIndex = route.autotyped.toSplicedIndex(index)
-    const completions = autotype.languageService.getCompletionsAtPosition(
+    const completions = autotype.getCompletionsAtPosition(
       fileName,
       splicedIndex,
       options,
@@ -74,7 +74,7 @@ export function decorateCompletions(ctx: Context) {
     const route = autotype.getRoute(fileName)
     if (!route) return fallback()
 
-    const details = autotype.languageService.getCompletionEntryDetails(
+    const details = autotype.getCompletionEntryDetails(
       fileName,
       route.autotyped.toSplicedIndex(position),
       entryName,
@@ -114,7 +114,7 @@ export function decorateCompletions(ctx: Context) {
     const route = autotype.getRoute(fileName)
     if (!route) return fallback()
 
-    return autotype.languageService.getSignatureHelpItems(
+    return autotype.getSignatureHelpItems(
       fileName,
       route.autotyped.toSplicedIndex(position),
       options,

@@ -14,10 +14,7 @@ export function decorateHover(ctx: Context) {
     if (!route) return fallback()
 
     const splicedIndex = route.autotyped.toSplicedIndex(index)
-    const quickinfo = autotype.languageService.getQuickInfoAtPosition(
-      fileName,
-      splicedIndex,
-    )
+    const quickinfo = autotype.getQuickInfoAtPosition(fileName, splicedIndex)
     if (!quickinfo) return fallback()
     return {
       ...quickinfo,

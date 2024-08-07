@@ -47,7 +47,7 @@ function getRouteDiagnostics<
   if (!route) return
 
   const diagnostics: ts.Diagnostic[] = []
-  for (let diagnostic of autotype.languageService[methodName](fileName)) {
+  for (let diagnostic of autotype[methodName](fileName)) {
     let start = diagnostic.start
     let length = diagnostic.length
 

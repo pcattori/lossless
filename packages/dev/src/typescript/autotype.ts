@@ -19,10 +19,11 @@ type RouteModule = {
 
 const FORCE_UPDATE_VERSION = "FORCE_UPDATE_VERSION"
 
-let CACHED: {
-  languageService: ts.LanguageService
+type AutotypeLanguageService = ts.LanguageService & {
   getRoute: (fileName: string) => RouteModule | undefined
-} | null = null
+}
+
+let CACHED: AutotypeLanguageService | null = null
 
 export function getAutotypeLanguageService(ctx: Context) {
   if (CACHED) return CACHED
@@ -141,7 +142,7 @@ export function getAutotypeLanguageService(ctx: Context) {
   }
 
   const languageService = ts.createLanguageService(autotypeHost)
-  CACHED = { languageService, getRoute }
+  CACHED = { ...languageService, getRoute }
   return CACHED
 }
 

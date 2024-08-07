@@ -14,7 +14,7 @@ export function decorateInlayHints(ctx: Context): void {
     if (!route) return fallback()
 
     const start = route.autotyped.toSplicedIndex(span.start)
-    return autotype.languageService
+    return autotype
       .provideInlayHints(
         fileName,
         {

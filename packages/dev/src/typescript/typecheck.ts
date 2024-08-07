@@ -7,21 +7,7 @@ import { decorateLanguageService } from "./language-service"
 export function typecheck(config: Config) {
   const { fileNames, options } = parseTsconfig(config)
 
-  const host: ts.LanguageServiceHost = {
-    getScriptFileNames: () => fileNames,
-    getScriptVersion: () => "0",
-    getScriptSnapshot: (fileName) => {
-      const content = ts.sys.readFile(fileName)
-      if (!content) return
-      return ts.ScriptSnapshot.fromString(content)
-    },
-    getCurrentDirectory: () => process.cwd(), // TODO
-    getCompilationSettings: () => options,
-    getDefaultLibFileName: ts.getDefaultLibFilePath,
-    fileExists: ts.sys.fileExists,
-    readFile: ts.sys.readFile,
-    readDirectory: ts.sys.readDirectory,
-  }
+  const host = createLanguageServiceHost({ fileNames, options })
   const languageService = ts.createLanguageService(host)
   decorateLanguageService({
     config,
@@ -29,9 +15,9 @@ export function typecheck(config: Config) {
     languageServiceHost: host,
     ts,
   })
-  const program = ts.createProgram(fileNames, options)
 
   let diagnostics: ts.Diagnostic[] = []
+  const program = ts.createProgram(fileNames, options)
   for (const sourceFile of program.getSourceFiles()) {
     if (sourceFile.isDeclarationFile) continue
     diagnostics = diagnostics.concat(
@@ -71,6 +57,30 @@ export function typecheck(config: Config) {
       "\x1b[36m%s\x1b[0m",
       "✨ Done. No errors or warnings were found.",
     )
+  }
+}
+
+function createLanguageServiceHost({
+  fileNames,
+  options,
+}: {
+  fileNames: string[]
+  options: ts.CompilerOptions
+}): ts.LanguageServiceHost {
+  return {
+    getScriptFileNames: () => fileNames,
+    getScriptVersion: () => "0",
+    getScriptSnapshot: (fileName) => {
+      const content = ts.sys.readFile(fileName)
+      if (!content) return
+      return ts.ScriptSnapshot.fromString(content)
+    },
+    getCurrentDirectory: () => process.cwd(), // TODO
+    getCompilationSettings: () => options,
+    getDefaultLibFileName: ts.getDefaultLibFilePath,
+    fileExists: ts.sys.fileExists,
+    readFile: ts.sys.readFile,
+    readDirectory: ts.sys.readDirectory,
   }
 }
 

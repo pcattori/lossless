@@ -1,2 +1,2 @@
 export { type Context } from "./context"
-export { getAutotypeLanguageService } from "./autotype"
+export { getAutotypeLanguageService, autotypeRoute } from "./autotype"

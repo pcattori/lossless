@@ -1,9 +1,9 @@
 import ts from "typescript"
 import * as path from "node:path"
 
-import { autotypeRoute } from "./autotype"
 import type { Config } from "./config"
 import { getRoutes } from "./routes"
+import { autotypeRoute } from "./typescript"
 
 function parseTsconfig(config: Config): ts.ParsedCommandLine {
   const configPath = ts.findConfigFile(

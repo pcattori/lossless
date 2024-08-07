@@ -17,54 +17,60 @@ export function decorateGetDefinition(ctx: Context) {
 
     const splicedIndex = route.autotyped.toSplicedIndex(index)
 
-    const exportTypeDefinitions = getRouteExportTypeDefinitions(
-      ctx,
-      autotype.languageService,
-      fileName,
-      splicedIndex,
-    )
-
     const result = autotype.languageService.getDefinitionAndBoundSpan(
       fileName,
       splicedIndex,
     )
-    if (!result) return exportTypeDefinitions ?? fallback()
-
-    let definitions = result.definitions?.map((definition) => {
-      const definitionRoute = autotype.getRoute(definition.fileName)
-      if (!definitionRoute) return definition
-      return {
-        ...definition,
-        textSpan: {
-          ...definition.textSpan,
-          start: definitionRoute.autotyped.toOriginalIndex(
-            definition.textSpan.start,
-          ).index,
-        },
-      }
-    })
-    definitions = [
-      ...(definitions ?? []),
-      ...(exportTypeDefinitions?.definitions ?? []),
-    ]
+    if (!result) return fallback()
 
     return {
-      definitions: definitions?.length > 0 ? definitions : undefined,
+      definitions: result.definitions?.map(toOriginalIndex(autotype)),
       textSpan: {
         ...result.textSpan,
         start: route.autotyped.toOriginalIndex(result.textSpan.start).index,
       },
     }
   }
+
+  let { getTypeDefinitionAtPosition } = ls
+  ls.getTypeDefinitionAtPosition = (fileName, index) => {
+    const fallback = () => getTypeDefinitionAtPosition(fileName, index)
+
+    const autotype = getAutotypeLanguageService(ctx)
+    if (!autotype) return fallback()
+
+    const route = autotype.getRoute(fileName)
+    if (!route) return fallback()
+
+    const splicedIndex = route.autotyped.toSplicedIndex(index)
+
+    const exportTypeDefinitions = getRouteExportTypeDefinitions(
+      ctx,
+      autotype,
+      fileName,
+      splicedIndex,
+    )
+    if (exportTypeDefinitions) return exportTypeDefinitions
+
+    const definitions = autotype.languageService.getTypeDefinitionAtPosition(
+      fileName,
+      splicedIndex,
+    )
+    if (!definitions) return fallback()
+
+    return definitions.map(toOriginalIndex(autotype))
+  }
 }
 
 function getRouteExportTypeDefinitions(
   ctx: Context,
-  autotype: ts.LanguageService,
+  autotype: ReturnType<typeof getAutotypeLanguageService>,
   fileName: string,
   splicedIndex: number,
 ) {
-  const autotypeSourceFile = autotype.getProgram()?.getSourceFile(fileName)
+  const autotypeSourceFile = autotype.languageService
+    .getProgram()
+    ?.getSourceFile(fileName)
   if (!autotypeSourceFile) return
   const node = findNodeAtPosition(autotypeSourceFile, splicedIndex)
   if (!node) return
@@ -74,7 +80,9 @@ function getRouteExportTypeDefinitions(
     getRouteNamedExportTypeDefinitions(ctx, node)
 
   if (!type) return
-  return autotype.getDefinitionAndBoundSpan(fileName, type.getStart())
+  return autotype.languageService
+    .getTypeDefinitionAtPosition(fileName, type.getStart())
+    ?.map(toOriginalIndex(autotype))
 }
 
 function getRouteDefaultExportTypeDefinitions(ctx: Context, node: ts.Node) {
@@ -169,3 +177,19 @@ function findNodeAtPosition(node: ts.Node, pos: number): ts.Node | undefined {
   }
   return node
 }
+
+const toOriginalIndex =
+  (autotype: ReturnType<typeof getAutotypeLanguageService>) =>
+  (definition: ts.DefinitionInfo): ts.DefinitionInfo => {
+    const definitionRoute = autotype.getRoute(definition.fileName)
+    if (!definitionRoute) return definition
+    return {
+      ...definition,
+      textSpan: {
+        ...definition.textSpan,
+        start: definitionRoute.autotyped.toOriginalIndex(
+          definition.textSpan.start,
+        ).index,
+      },
+    }
+  }

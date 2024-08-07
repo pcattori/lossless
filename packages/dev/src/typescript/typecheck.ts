@@ -1,9 +1,9 @@
 import ts from "typescript"
 import * as path from "node:path"
 
-import type { Config } from "./config"
-import { getRoutes } from "./routes"
-import { autotypeRoute } from "./typescript"
+import type { Config } from "../config"
+import { getRoutes } from "../routes"
+import { autotypeRoute } from "./autotype"
 
 function parseTsconfig(config: Config): ts.ParsedCommandLine {
   const configPath = ts.findConfigFile(
@@ -23,7 +23,7 @@ function parseTsconfig(config: Config): ts.ParsedCommandLine {
   )
 }
 
-export default async function typecheck(config: Config) {
+export async function typecheck(config: Config) {
   const routes = getRoutes(config)
 
   const { fileNames, options } = parseTsconfig(config)

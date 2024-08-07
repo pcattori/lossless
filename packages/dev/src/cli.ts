@@ -1,6 +1,6 @@
 import cac from "cac"
 
-import typecheck from "./typecheck"
+import { typecheck } from "./typescript"
 import * as typegen from "./typegen"
 import type { Config } from "./config"
 

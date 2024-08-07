@@ -5,8 +5,7 @@ import ts from "typescript"
 import * as path from "node:path"
 
 import type { Config } from "../config"
-import { getRoutes } from "../routes"
-import { routeExports } from "../route-exports"
+import { getRoutes, routeExports } from "../routes"
 import { getTypesPath } from "../typegen"
 import { noext } from "../utils"
 

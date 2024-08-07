@@ -1,3 +1,5 @@
+// Adapted from https://github.com/sveltejs/language-tools/blob/master/packages/typescript-plugin/src/language-service/sveltekit.ts
+
 import ts from "typescript"
 
 import * as path from "node:path"

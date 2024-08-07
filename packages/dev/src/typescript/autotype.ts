@@ -169,109 +169,128 @@ function autotypeRoute(config: Config, filepath: string, code: string) {
 
   const splices: Splice[] = [
     { index: 0, content: `import * as $autotype from "${typesSource}"\n\n` },
+    ...sourceFile.statements.flatMap((stmt) => [
+      ...annotateDefaultExportExpression(stmt),
+      ...annotateNamedExportFunctionDeclaration(stmt),
+      ...annotateNamedExportVariableStatement(stmt),
+    ]),
   ]
-  sourceFile.statements.forEach((stmt) => {
-    if (ts.isExportAssignment(stmt)) {
-      // BEFORE: export default expr
-      // AFTER:  export default (expr) satisfies <type>
-      //                        ^    ^^^^^^^^^^^^^^^^^^
-      if (stmt.isExportEquals === true) {
-        throw Error(`Unexpected 'export  =' in '${filepath}'`)
-      }
-      const jsdoc = routeExports["default"]?.jsdoc
-      if (jsdoc) {
-        splices.push({
-          index: stmt.getStart(sourceFile),
+  return new AutotypedRoute(code, splices)
+}
+
+function annotateDefaultExportExpression(stmt: ts.Statement): Splice[] {
+  // BEFORE: export default expr
+  // AFTER:  export default (expr) satisfies <type>
+  //                        ^    ^^^^^^^^^^^^^^^^^^
+  if (!ts.isExportAssignment(stmt)) return []
+  if (stmt.isExportEquals) return []
+
+  const sourceFile = stmt.parent
+  const expStart = stmt.getStart()
+  const expMatch = sourceFile
+    .getFullText()
+    .slice(expStart)
+    .match(/^export\s+default\b/)
+  if (!expMatch) {
+    throw Error(
+      `expected /export\\s+default\\b/ at ${sourceFile.fileName}:${expStart}`,
+    )
+  }
+  const exportName = {
+    start: expStart + (expMatch[0].length - 7),
+    length: 7,
+  }
+
+  const jsdoc = routeExports.default?.jsdoc
+  return [
+    jsdoc
+      ? {
+          index: stmt.getStart(),
           content: `\n${jsdoc}\n`,
-        })
-      }
-
-      const expStart = stmt.getStart(sourceFile)
-      const expMatch = sourceFile
-        .getFullText()
-        .slice(expStart)
-        .match(/^export\s+default\b/)
-      if (!expMatch) {
-        throw Error(
-          `expected /export\\s+default\\b/ at ${filepath}:${expStart}`,
-        )
-      }
-      const exportName = {
-        start: expStart + (expMatch[0].length - 7),
-        length: 7,
-      }
-      splices.push({
-        index: stmt.expression.getStart(sourceFile),
-        content: "(",
-        exportName,
-      })
-      splices.push({
-        index: stmt.expression.getEnd(),
-        content: ") satisfies $autotype._default",
-        exportName,
-      })
-    } else if (ts.isVariableStatement(stmt)) {
-      // BEFORE: export const loader = expr
-      // AFTER:  export const loader = (expr) satisfies <type>
-      //                               ^    ^^^^^^^^^^^^^^^^^^
-      let exp = exported(stmt)
-      if (!exp) return
-      for (let decl of stmt.declarationList.declarations) {
-        if (!ts.isIdentifier(decl.name)) continue
-        if (decl.initializer === undefined) continue
-
-        const jsdoc = routeExports[decl.name.text]?.jsdoc
-        if (jsdoc) {
-          splices.push({
-            index: stmt.getStart(sourceFile),
-            content: `\n${jsdoc}\n`,
-          })
         }
+      : null,
+    {
+      index: stmt.expression.getStart(),
+      content: "(",
+      exportName,
+    },
+    {
+      index: stmt.expression.getEnd(),
+      content: ") satisfies $autotype._default",
+      exportName,
+    },
+  ].filter((x) => x !== null)
+}
 
-        const exportName = {
-          start: decl.name.getStart(sourceFile),
-          length: decl.name.getWidth(sourceFile),
-        }
-        splices.push({
-          index: decl.initializer.getStart(sourceFile),
-          content: "(",
-          exportName,
-        })
+function annotateNamedExportFunctionDeclaration(stmt: ts.Statement): Splice[] {
+  // BEFORE: export function loader() {...}
+  // AFTER:  export const loader = (function loader() {...}) satisfies <type>
+  //                ^^^^^^^^^^^^^^^^                       ^^^^^^^^^^^^^^^^^^
+  if (!ts.isFunctionDeclaration(stmt)) return []
+  let exp = exported(stmt)
+  if (!exp) return []
 
-        splices.push({
-          index: decl.initializer.getEnd(),
-          content: `) satisfies $autotype.${decl.name.text}`,
-          exportName,
-        })
-      }
-    } else if (ts.isFunctionDeclaration(stmt)) {
-      // BEFORE: export function loader() {...}
-      // AFTER:  export const loader = (function loader() {...}) satisfies <type>
-      //                ^^^^^^^^^^^^^^^^                       ^^^^^^^^^^^^^^^^^^
-      let exp = exported(stmt)
-      if (!exp) return
-      if (!stmt.name) return
-      if (!stmt.body) return
+  if (!stmt.name) return []
+  if (!stmt.body) return []
 
-      const jsdoc = routeExports[stmt.name.text]?.jsdoc
+  const jsdoc = routeExports[stmt.name.text]?.jsdoc
 
-      const exportName = {
-        start: stmt.name.getStart(sourceFile),
-        length: stmt.name.getWidth(sourceFile),
-      }
+  const exportName = {
+    start: stmt.name.getStart(),
+    length: stmt.name.getWidth(),
+  }
+  return [
+    {
+      index: exp.getEnd() + 1, // TODO: account for more whitespace
+      content: `const ${stmt.name.text} = (` + (jsdoc ? jsdoc + "\n" : ""),
+      exportName,
+    },
+    {
+      index: stmt.body.getEnd(),
+      content: `) satisfies $autotype.${stmt.name.text}`,
+      exportName,
+    },
+  ]
+}
+
+function annotateNamedExportVariableStatement(stmt: ts.Statement): Splice[] {
+  // BEFORE: export const loader = expr
+  // AFTER:  export const loader = (expr) satisfies <type>
+  //                               ^    ^^^^^^^^^^^^^^^^^^
+  if (!ts.isVariableStatement(stmt)) return []
+  let exp = exported(stmt)
+  if (!exp) return []
+
+  const splices: Splice[] = []
+  for (let decl of stmt.declarationList.declarations) {
+    if (!ts.isIdentifier(decl.name)) continue
+    if (decl.initializer === undefined) continue
+
+    const jsdoc = routeExports[decl.name.text]?.jsdoc
+    if (jsdoc) {
       splices.push({
-        index: exp.getEnd() + 1, // TODO: account for more whitespace
-        content: `const ${stmt.name.text} = (` + (jsdoc ? jsdoc + "\n" : ""),
-        exportName,
-      })
-      splices.push({
-        index: stmt.body.getEnd(),
-        content: `) satisfies $autotype.${stmt.name.text}`,
-        exportName,
+        index: stmt.getStart(),
+        content: `\n${jsdoc}\n`,
       })
     }
-  })
-  return new AutotypedRoute(code, splices)
+
+    const exportName = {
+      start: decl.name.getStart(),
+      length: decl.name.getWidth(),
+    }
+    splices.push({
+      index: decl.initializer.getStart(),
+      content: "(",
+      exportName,
+    })
+
+    splices.push({
+      index: decl.initializer.getEnd(),
+      content: `) satisfies $autotype.${decl.name.text}`,
+      exportName,
+    })
+  }
+  return splices
 }
 
 class AutotypedRoute {

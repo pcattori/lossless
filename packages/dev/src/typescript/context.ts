@@ -1,5 +1,6 @@
-import type { Config } from "@lossless/dev"
 import type ts from "typescript"
+
+import type { Config } from "../config"
 
 export type Context = {
   config: Config

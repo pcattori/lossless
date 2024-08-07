@@ -4,9 +4,12 @@ import * as path from "node:path"
 
 import type ts from "typescript/lib/tsserverlibrary"
 
-import { typegenWatch, type Config } from "@lossless/dev"
-import { getAutotypeLanguageService } from "./autotype"
-import type { Context } from "./context"
+import {
+  getAutotypeLanguageService,
+  typegenWatch,
+  type Config,
+  type Context,
+} from "@lossless/dev"
 
 type TS = typeof ts
 

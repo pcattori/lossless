@@ -1,5 +1,7 @@
 import ts from "typescript"
-import { autotypeRoute, getRoutes, type AutotypedRoute } from "@lossless/dev"
+
+import { getRoutes } from "../routes"
+import { autotypeRoute, type AutotypedRoute } from "../autotype"
 import type { Context } from "./context"
 
 type RouteModule = {

@@ -4,24 +4,6 @@ import * as path from "node:path"
 import type { Config } from "../config"
 import { decorateLanguageService } from "./language-service"
 
-function parseTsconfig(config: Config): ts.ParsedCommandLine {
-  const configPath = ts.findConfigFile(
-    config.appDirectory,
-    ts.sys.fileExists,
-    "tsconfig.json",
-  )
-  if (!configPath) {
-    throw new Error("Could not find a valid 'tsconfig.json'.")
-  }
-
-  const configFile = ts.readConfigFile(configPath, ts.sys.readFile)
-  return ts.parseJsonConfigFileContent(
-    configFile.config,
-    ts.sys,
-    path.dirname(configPath),
-  )
-}
-
 export function typecheck(config: Config) {
   const { fileNames, options } = parseTsconfig(config)
 
@@ -40,13 +22,12 @@ export function typecheck(config: Config) {
     readFile: ts.sys.readFile,
     readDirectory: ts.sys.readDirectory,
   }
-  const ls = ts.createLanguageService(host)
+  const languageService = ts.createLanguageService(host)
   decorateLanguageService({
     config,
-    languageService: ls,
+    languageService,
     languageServiceHost: host,
     ts,
-    logger: console,
   })
   const program = ts.createProgram(fileNames, options)
 
@@ -54,11 +35,11 @@ export function typecheck(config: Config) {
   for (const sourceFile of program.getSourceFiles()) {
     if (sourceFile.isDeclarationFile) continue
     diagnostics = diagnostics.concat(
-      ls.getSyntacticDiagnostics(sourceFile.fileName).map((d) => {
+      languageService.getSyntacticDiagnostics(sourceFile.fileName).map((d) => {
         d.file = sourceFile
         return d
       }),
-      ls.getSemanticDiagnostics(sourceFile.fileName).map((d) => {
+      languageService.getSemanticDiagnostics(sourceFile.fileName).map((d) => {
         d.file = sourceFile
         return d
       }),
@@ -91,4 +72,22 @@ export function typecheck(config: Config) {
       "✨ Done. No errors or warnings were found.",
     )
   }
+}
+
+function parseTsconfig(config: Config): ts.ParsedCommandLine {
+  const configPath = ts.findConfigFile(
+    config.appDirectory,
+    ts.sys.fileExists,
+    "tsconfig.json",
+  )
+  if (!configPath) {
+    throw new Error("Could not find a valid 'tsconfig.json'.")
+  }
+
+  const configFile = ts.readConfigFile(configPath, ts.sys.readFile)
+  return ts.parseJsonConfigFileContent(
+    configFile.config,
+    ts.sys,
+    path.dirname(configPath),
+  )
 }

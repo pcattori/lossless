@@ -7,7 +7,7 @@ export type Context = {
   languageService: ts.LanguageService
   languageServiceHost: ts.LanguageServiceHost
   ts: typeof ts
-  logger: {
+  logger?: {
     info: (message: string) => void
   }
 }

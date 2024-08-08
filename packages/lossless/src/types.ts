@@ -1,6 +1,8 @@
 import type { LinkDescriptor } from "./links"
 import type { ReactNode } from "react"
 
+export type { LinkDescriptor }
+
 // prettier-ignore
 type Equal<X, Y> =
   (<T>() => T extends X ? 1 : 2) extends
@@ -81,7 +83,7 @@ type DataFrom<T> =
   T extends Fn ? Awaited<ReturnType<T>> :
   undefined
 
-export type RouteConstraints<
+export type RouteArgs<
   Params,
   RouteModule extends {
     serverLoader?: Fn
@@ -92,23 +94,20 @@ export type RouteConstraints<
   },
 > = {
   // TODO: meta, handle, shouldRevalidate
-  links: (args: { params: Pretty<Params> }) => LinkDescriptor[]
-  serverLoader: (args: LoaderArgs<Params>) => ServerData
-  clientLoader: (
-    args: LoaderArgs<Params> & {
-      serverLoader: () => Promise<DataFrom<RouteModule["serverLoader"]>>
-    },
-  ) => unknown
-  // TODO: clientLoader.hydrate
-  HydrateFallback: (args: { params: Pretty<Params> }) => ReactNode
+  links: { params: Pretty<Params> }
+  serverLoader: LoaderArgs<Params>
+  clientLoader: LoaderArgs<Params> & {
+    serverLoader: () => Promise<DataFrom<RouteModule["serverLoader"]>>
+  }
 
-  serverAction: (args: ActionArgs<Params>) => ServerData
-  clientAction: (
-    args: LoaderArgs<Params> & {
-      serverLoader: () => Promise<DataFrom<RouteModule["serverAction"]>>
-    },
-  ) => unknown
-  default: (args: {
+  // TODO: clientLoader.hydrate
+  HydrateFallback: { params: Pretty<Params> }
+
+  serverAction: ActionArgs<Params>
+  clientAction: LoaderArgs<Params> & {
+    serverLoader: () => Promise<DataFrom<RouteModule["serverAction"]>>
+  }
+  default: {
     params: Pretty<Params>
     loaderData: LoaderData<
       DataFrom<RouteModule["serverLoader"]>,
@@ -120,8 +119,8 @@ export type RouteConstraints<
       DataFrom<RouteModule["serverAction"]>,
       DataFrom<RouteModule["clientAction"]>
     >
-  }) => ReactNode
-  ErrorBoundary: (args: {
+  }
+  ErrorBoundary: {
     params: Pretty<Params>
     error: unknown
     loaderData?: LoaderData<
@@ -134,5 +133,5 @@ export type RouteConstraints<
       DataFrom<RouteModule["serverAction"]>,
       DataFrom<RouteModule["clientAction"]>
     >
-  }) => ReactNode
+  }
 }

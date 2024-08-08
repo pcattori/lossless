@@ -69,17 +69,7 @@ function typegen(route: Route) {
     `import type * as Lossless from "lossless"`,
     "",
     `type Params = ${paramsType}`,
-    `type RouteConstraints = Lossless.RouteConstraints<Params, typeof import("${routePath}")>`,
-    "",
-    `export type links = RouteConstraints["links"]`,
-    `export type serverLoader = RouteConstraints["serverLoader"]`,
-    `export type clientLoader = RouteConstraints["clientLoader"]`,
-    `// TODO: clientLoader.hydrate`,
-    `export type HydrateFallback = RouteConstraints["HydrateFallback"]`,
-    `export type serverAction = RouteConstraints["serverAction"]`,
-    `export type clientAction = RouteConstraints["clientAction"]`,
-    `export type _default = RouteConstraints["default"]`,
-    `export type ErrorBoundary = RouteConstraints["ErrorBoundary"]`,
+    `export type Args = Lossless.RouteArgs<Params, typeof import("${routePath}")>`,
   ].join("\n")
 }
 

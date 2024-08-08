@@ -181,7 +181,7 @@ function annotateDefaultExportFunctionDeclaration(
   let exp = exported(stmt)
   if (!exp) return []
 
-  return annotateFunction(stmt, `import("${typesSource}")._default`)
+  return annotateFunction(stmt, typesSource, "default")
 }
 
 function annotateDefaultExportExpression(
@@ -191,7 +191,7 @@ function annotateDefaultExportExpression(
   if (!ts.isExportAssignment(stmt)) return []
   if (stmt.isExportEquals) return []
   if (!ts.isArrowFunction(stmt.expression)) return []
-  return annotateFunction(stmt.expression, `import("${typesSource}")._default`)
+  return annotateFunction(stmt.expression, typesSource, "default")
 }
 
 function annotateNamedExportFunctionDeclaration(
@@ -209,7 +209,7 @@ function annotateNamedExportFunctionDeclaration(
   const name = stmt.name?.text
   if (!name) return []
 
-  return annotateFunction(stmt, `import("${typesSource}").${name}`)
+  return annotateFunction(stmt, typesSource, name)
 }
 
 function annotateNamedExportVariableStatement(
@@ -229,10 +229,7 @@ function annotateNamedExportVariableStatement(
       ts.isArrowFunction(decl.initializer)
     ) {
       const name = decl.name.text
-      return annotateFunction(
-        decl.initializer,
-        `import("${typesSource}").${name}`,
-      )
+      return annotateFunction(decl.initializer, typesSource, name)
     }
     return []
   })
@@ -240,7 +237,8 @@ function annotateNamedExportVariableStatement(
 
 function annotateFunction(
   fn: ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression,
-  fnType: string,
+  typesSource: string,
+  name: string,
 ): Splice[] {
   const param = fn.parameters[0]
 
@@ -248,17 +246,25 @@ function annotateFunction(
     ? fn.equalsGreaterThanToken.getStart()
     : fn.body?.getStart()
 
+  // prettier-ignore
+  const returnType =
+    name === "links" ? `import("lossless/types").LinkDescriptor[]` :
+    name === "HydrateFallback" ? `import("react").ReactNode` :
+    name === "default" ? `import("react").ReactNode` :
+    name === "ErrorBoundary" ? `import("react").ReactNode` :
+    undefined
+
   return [
     param && param.type === undefined
       ? {
           index: param.getEnd(),
-          content: `: Parameters<${fnType}>[0]`,
+          content: `: import("${typesSource}").Args["${name}"]`,
         }
       : null,
-    returnTypeIndex && fn.type === undefined
+    returnType && returnTypeIndex && fn.type === undefined
       ? {
           index: returnTypeIndex,
-          content: `: ReturnType<${fnType}> `,
+          content: `: ${returnType} `,
         }
       : null,
   ].filter((x) => x !== null)

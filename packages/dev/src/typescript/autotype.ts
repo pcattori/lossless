@@ -159,15 +159,14 @@ function autotypeRoute(config: Config, filepath: string, code: string) {
     true,
   )
   const route = { file: path.relative(config.appDirectory, filepath) }
-  const typesSource = noext(getTypesPath(config, route))
+  const typesSource = "./" + noext(path.basename(getTypesPath(config, route)))
 
   const splices: Splice[] = [
-    { index: 0, content: `import * as $autotype from "${typesSource}"\n\n` },
     ...sourceFile.statements.flatMap((stmt) => [
-      ...annotateDefaultExportFunctionDeclaration(stmt),
-      ...annotateDefaultExportExpression(stmt),
-      ...annotateNamedExportFunctionDeclaration(stmt),
-      ...annotateNamedExportVariableStatement(stmt),
+      ...annotateDefaultExportFunctionDeclaration(stmt, typesSource),
+      ...annotateDefaultExportExpression(stmt, typesSource),
+      ...annotateNamedExportFunctionDeclaration(stmt, typesSource),
+      ...annotateNamedExportVariableStatement(stmt, typesSource),
     ]),
   ]
   return new AutotypedRoute(code, splices)
@@ -175,26 +174,30 @@ function autotypeRoute(config: Config, filepath: string, code: string) {
 
 function annotateDefaultExportFunctionDeclaration(
   stmt: ts.Statement,
+  typesSource: string,
 ): Splice[] {
   if (!ts.isFunctionDeclaration(stmt)) return []
 
   let exp = exported(stmt)
   if (!exp) return []
 
-  return annotateFunction(stmt, "$autotype._default")
+  return annotateFunction(stmt, `import("${typesSource}")._default`)
 }
 
-function annotateDefaultExportExpression(stmt: ts.Statement): Splice[] {
+function annotateDefaultExportExpression(
+  stmt: ts.Statement,
+  typesSource: string,
+): Splice[] {
   if (!ts.isExportAssignment(stmt)) return []
   if (stmt.isExportEquals) return []
   if (!ts.isArrowFunction(stmt.expression)) return []
-  return annotateFunction(stmt.expression, "$autotype._default")
+  return annotateFunction(stmt.expression, `import("${typesSource}")._default`)
 }
 
-function annotateNamedExportFunctionDeclaration(stmt: ts.Statement): Splice[] {
-  // BEFORE: export function loader() {...}
-  // AFTER:  export const loader = (function loader() {...}) satisfies <type>
-  //                ^^^^^^^^^^^^^^^^                       ^^^^^^^^^^^^^^^^^^
+function annotateNamedExportFunctionDeclaration(
+  stmt: ts.Statement,
+  typesSource: string,
+): Splice[] {
   if (!ts.isFunctionDeclaration(stmt)) return []
   let exp = exported(stmt)
   if (!exp) return []
@@ -206,10 +209,13 @@ function annotateNamedExportFunctionDeclaration(stmt: ts.Statement): Splice[] {
   const name = stmt.name?.text
   if (!name) return []
 
-  return annotateFunction(stmt, `$autotype.${name}`)
+  return annotateFunction(stmt, `import("${typesSource}").${name}`)
 }
 
-function annotateNamedExportVariableStatement(stmt: ts.Statement): Splice[] {
+function annotateNamedExportVariableStatement(
+  stmt: ts.Statement,
+  typesSource: string,
+): Splice[] {
   if (!ts.isVariableStatement(stmt)) return []
   let exp = exported(stmt)
   if (!exp) return []
@@ -223,7 +229,10 @@ function annotateNamedExportVariableStatement(stmt: ts.Statement): Splice[] {
       ts.isArrowFunction(decl.initializer)
     ) {
       const name = decl.name.text
-      return annotateFunction(decl.initializer, `$autotype.${name}`)
+      return annotateFunction(
+        decl.initializer,
+        `import("${typesSource}").${name}`,
+      )
     }
     return []
   })

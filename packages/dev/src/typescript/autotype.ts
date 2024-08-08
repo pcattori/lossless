@@ -298,6 +298,7 @@ class AutotypedRoute {
 
   toOriginalIndex(splicedIndex: number): {
     index: number
+    spliced: boolean
   } {
     let spliceOffset = 0
     for (let { index, content } of this._splices) {
@@ -305,12 +306,14 @@ class AutotypedRoute {
       if (splicedIndex < index + spliceOffset) break
 
       // within this splice
-      if (splicedIndex < index + spliceOffset + content.length) return { index }
+      if (splicedIndex < index + spliceOffset + content.length) {
+        return { index, spliced: true }
+      }
 
       // after this splice
       spliceOffset += content.length
     }
-    return { index: Math.max(0, splicedIndex - spliceOffset) }
+    return { index: Math.max(0, splicedIndex - spliceOffset), spliced: false }
   }
 }
 

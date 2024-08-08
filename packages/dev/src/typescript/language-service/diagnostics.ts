@@ -48,13 +48,21 @@ function getRouteDiagnostics<
 
   const diagnostics: ts.Diagnostic[] = []
   for (let diagnostic of autotype[methodName](fileName)) {
-    let start = diagnostic.start
-    if (start) {
-      start = route.autotyped.toOriginalIndex(start).index
+    if (!diagnostic.start) {
+      diagnostics.push(diagnostic)
+      continue
+    }
+
+    const { index, spliced } = route.autotyped.toOriginalIndex(diagnostic.start)
+    let length = diagnostic.length
+    if (spliced) {
+      // avoid diagnostics in splices from overflowing onto unrelated code
+      length = 1
     }
     diagnostics.push({
       ...diagnostic,
-      start,
+      start: index,
+      length,
       file: ctx.languageService.getProgram()?.getSourceFile(fileName),
     })
   }

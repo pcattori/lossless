@@ -159,7 +159,7 @@ function autotypeRoute(config: Config, filepath: string, code: string) {
     true,
   )
   const route = { file: path.relative(config.appDirectory, filepath) }
-  const typesSource = "./" + noext(path.basename(getTypesPath(config, route)))
+  const typesSource = "./" + path.parse(getTypesPath(config, route)).name
 
   const splices: Splice[] = [
     ...sourceFile.statements.flatMap((stmt) => [

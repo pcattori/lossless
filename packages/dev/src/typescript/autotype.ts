@@ -5,7 +5,7 @@ import ts from "typescript"
 import * as path from "node:path"
 
 import type { Config } from "../config"
-import { getRoutes } from "../routes"
+import { getRoutes, routeExports } from "../routes"
 import { getTypesPath } from "../typegen"
 import { noext } from "../utils"
 
@@ -245,13 +245,7 @@ function annotateFunction(
     ? fn.equalsGreaterThanToken.getStart()
     : fn.body?.getStart()
 
-  // prettier-ignore
-  const returnType =
-    name === "links" ? `import("lossless/types").LinkDescriptor[]` :
-    name === "HydrateFallback" ? `import("react").ReactNode` :
-    name === "default" ? `import("react").ReactNode` :
-    name === "ErrorBoundary" ? `import("react").ReactNode` :
-    undefined
+  const returnType = routeExports[name]?.returnType
 
   return [
     param && param.type === undefined

@@ -22,6 +22,7 @@ export function getRoutes(config: Config): Map<string, Route> {
 
 type RouteExportInfo = {
   jsdoc: string
+  returnType?: string
 }
 
 function createJsdoc(args: { name: string; link: string }) {
@@ -34,6 +35,7 @@ export const routeExports: Record<string, RouteExportInfo> = {
       name: "links",
       link: `https://remix.run/docs/en/main/route/links`,
     }),
+    returnType: `import("lossless/types").LinkDescriptor[]`,
   },
   serverLoader: {
     jsdoc: createJsdoc({
@@ -53,6 +55,7 @@ export const routeExports: Record<string, RouteExportInfo> = {
       name: "HydrateFallback",
       link: `https://remix.run/docs/en/main/route/hydrate-fallback`,
     }),
+    returnType: `import("react").ReactNode`,
   },
   serverAction: {
     jsdoc: createJsdoc({
@@ -71,12 +74,14 @@ export const routeExports: Record<string, RouteExportInfo> = {
       name: "default",
       link: `https://remix.run/docs/en/main/route/component`,
     }),
+    returnType: `import("react").ReactNode`,
   },
   ErrorBoundary: {
     jsdoc: createJsdoc({
       name: "ErrorBoundary",
       link: `https://remix.run/docs/en/main/route/error-boundary`,
     }),
+    returnType: `import("react").ReactNode`,
   },
   // TODO handle
   // TODO meta

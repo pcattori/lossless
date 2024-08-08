@@ -14,6 +14,7 @@ export function typecheck(config: Config) {
     languageService,
     languageServiceHost: host,
     ts,
+    logger: console,
   })
 
   let diagnostics: ts.Diagnostic[] = []

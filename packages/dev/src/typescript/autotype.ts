@@ -5,7 +5,7 @@ import ts from "typescript"
 import * as path from "node:path"
 
 import type { Config } from "../config"
-import { getRoutes, routeExports } from "../routes"
+import { getRoutes } from "../routes"
 import { getTypesPath } from "../typegen"
 import { noext } from "../utils"
 
@@ -146,15 +146,9 @@ export function getAutotypeLanguageService(ctx: Context) {
   return CACHED
 }
 
-type ExportName = {
-  start: number
-  length: number
-}
-
 type Splice = {
   index: number
   content: string
-  exportName?: ExportName
 }
 
 function autotypeRoute(config: Config, filepath: string, code: string) {
@@ -170,6 +164,7 @@ function autotypeRoute(config: Config, filepath: string, code: string) {
   const splices: Splice[] = [
     { index: 0, content: `import * as $autotype from "${typesSource}"\n\n` },
     ...sourceFile.statements.flatMap((stmt) => [
+      ...annotateDefaultExportFunctionDeclaration(stmt),
       ...annotateDefaultExportExpression(stmt),
       ...annotateNamedExportFunctionDeclaration(stmt),
       ...annotateNamedExportVariableStatement(stmt),
@@ -178,48 +173,22 @@ function autotypeRoute(config: Config, filepath: string, code: string) {
   return new AutotypedRoute(code, splices)
 }
 
+function annotateDefaultExportFunctionDeclaration(
+  stmt: ts.Statement,
+): Splice[] {
+  if (!ts.isFunctionDeclaration(stmt)) return []
+
+  let exp = exported(stmt)
+  if (!exp) return []
+
+  return annotateFunction(stmt, "$autotype._default")
+}
+
 function annotateDefaultExportExpression(stmt: ts.Statement): Splice[] {
-  // BEFORE: export default expr
-  // AFTER:  export default (expr) satisfies <type>
-  //                        ^    ^^^^^^^^^^^^^^^^^^
   if (!ts.isExportAssignment(stmt)) return []
   if (stmt.isExportEquals) return []
-
-  const sourceFile = stmt.parent
-  const expStart = stmt.getStart()
-  const expMatch = sourceFile
-    .getFullText()
-    .slice(expStart)
-    .match(/^export\s+default\b/)
-  if (!expMatch) {
-    throw Error(
-      `expected /export\\s+default\\b/ at ${sourceFile.fileName}:${expStart}`,
-    )
-  }
-  const exportName = {
-    start: expStart + (expMatch[0].length - 7),
-    length: 7,
-  }
-
-  const jsdoc = routeExports.default?.jsdoc
-  return [
-    jsdoc
-      ? {
-          index: stmt.getStart(),
-          content: `\n${jsdoc}\n`,
-        }
-      : null,
-    {
-      index: stmt.expression.getStart(),
-      content: "(",
-      exportName,
-    },
-    {
-      index: stmt.expression.getEnd(),
-      content: ") satisfies $autotype._default",
-      exportName,
-    },
-  ].filter((x) => x !== null)
+  if (!ts.isArrowFunction(stmt.expression)) return []
+  return annotateFunction(stmt.expression, "$autotype._default")
 }
 
 function annotateNamedExportFunctionDeclaration(stmt: ts.Statement): Splice[] {
@@ -229,68 +198,61 @@ function annotateNamedExportFunctionDeclaration(stmt: ts.Statement): Splice[] {
   if (!ts.isFunctionDeclaration(stmt)) return []
   let exp = exported(stmt)
   if (!exp) return []
+  const _default = stmt.modifiers?.find(
+    (m) => m.kind === ts.SyntaxKind.DefaultKeyword,
+  )
+  if (_default) return []
 
-  if (!stmt.name) return []
-  if (!stmt.body) return []
+  const name = stmt.name?.text
+  if (!name) return []
 
-  const jsdoc = routeExports[stmt.name.text]?.jsdoc
-
-  const exportName = {
-    start: stmt.name.getStart(),
-    length: stmt.name.getWidth(),
-  }
-  return [
-    {
-      index: exp.getEnd() + 1, // TODO: account for more whitespace
-      content: `const ${stmt.name.text} = (` + (jsdoc ? jsdoc + "\n" : ""),
-      exportName,
-    },
-    {
-      index: stmt.body.getEnd(),
-      content: `) satisfies $autotype.${stmt.name.text}`,
-      exportName,
-    },
-  ]
+  return annotateFunction(stmt, `$autotype.${name}`)
 }
 
 function annotateNamedExportVariableStatement(stmt: ts.Statement): Splice[] {
-  // BEFORE: export const loader = expr
-  // AFTER:  export const loader = (expr) satisfies <type>
-  //                               ^    ^^^^^^^^^^^^^^^^^^
   if (!ts.isVariableStatement(stmt)) return []
   let exp = exported(stmt)
   if (!exp) return []
 
-  const splices: Splice[] = []
-  for (let decl of stmt.declarationList.declarations) {
-    if (!ts.isIdentifier(decl.name)) continue
-    if (decl.initializer === undefined) continue
-
-    const jsdoc = routeExports[decl.name.text]?.jsdoc
-    if (jsdoc) {
-      splices.push({
-        index: stmt.getStart(),
-        content: `\n${jsdoc}\n`,
-      })
+  return stmt.declarationList.declarations.flatMap((decl) => {
+    if (!ts.isIdentifier(decl.name)) return []
+    if (decl.initializer === undefined) return []
+    if (
+      ts.isFunctionDeclaration(decl.initializer) ||
+      ts.isFunctionExpression(decl.initializer) ||
+      ts.isArrowFunction(decl.initializer)
+    ) {
+      const name = decl.name.text
+      return annotateFunction(decl.initializer, `$autotype.${name}`)
     }
+    return []
+  })
+}
 
-    const exportName = {
-      start: decl.name.getStart(),
-      length: decl.name.getWidth(),
-    }
-    splices.push({
-      index: decl.initializer.getStart(),
-      content: "(",
-      exportName,
-    })
+function annotateFunction(
+  fn: ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression,
+  fnType: string,
+): Splice[] {
+  const param = fn.parameters[0]
 
-    splices.push({
-      index: decl.initializer.getEnd(),
-      content: `) satisfies $autotype.${decl.name.text}`,
-      exportName,
-    })
-  }
-  return splices
+  const returnTypeIndex = ts.isArrowFunction(fn)
+    ? fn.equalsGreaterThanToken.getStart()
+    : fn.body?.getStart()
+
+  return [
+    param && param.type === undefined
+      ? {
+          index: param.getEnd(),
+          content: `: Parameters<${fnType}>[0]`,
+        }
+      : null,
+    returnTypeIndex && fn.type === undefined
+      ? {
+          index: returnTypeIndex,
+          content: `: ReturnType<${fnType}> `,
+        }
+      : null,
+  ].filter((x) => x !== null)
 }
 
 class AutotypedRoute {
@@ -329,16 +291,14 @@ class AutotypedRoute {
 
   toOriginalIndex(splicedIndex: number): {
     index: number
-    exportName?: ExportName
   } {
     let spliceOffset = 0
-    for (let { index, content, exportName } of this._splices) {
+    for (let { index, content } of this._splices) {
       // before this splice
       if (splicedIndex < index + spliceOffset) break
 
       // within this splice
-      if (splicedIndex < index + spliceOffset + content.length)
-        return { index, exportName }
+      if (splicedIndex < index + spliceOffset + content.length) return { index }
 
       // after this splice
       spliceOffset += content.length

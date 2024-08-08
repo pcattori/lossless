@@ -49,17 +49,12 @@ function getRouteDiagnostics<
   const diagnostics: ts.Diagnostic[] = []
   for (let diagnostic of autotype[methodName](fileName)) {
     let start = diagnostic.start
-    let length = diagnostic.length
-
     if (start) {
-      const { index, exportName } = route.autotyped.toOriginalIndex(start)
-      start = exportName?.start ?? index
-      length = exportName?.length ?? length
+      start = route.autotyped.toOriginalIndex(start).index
     }
     diagnostics.push({
       ...diagnostic,
       start,
-      length,
       file: ctx.languageService.getProgram()?.getSourceFile(fileName),
     })
   }

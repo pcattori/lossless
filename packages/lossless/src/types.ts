@@ -7,7 +7,6 @@ export type { LinkDescriptor }
 type Equal<X, Y> =
   (<T>() => T extends X ? 1 : 2) extends
   (<T>() => T extends Y ? 1 : 2) ? true : false
-type Pretty<T> = { [K in keyof T]: T[K] } & {}
 type IsAny<T> = 0 extends 1 & T ? true : false
 type Fn = (...args: any[]) => unknown
 type MaybePromise<T> = T | Promise<T>
@@ -68,13 +67,13 @@ type ActionData<ServerActionData, ClientActionData> = Awaited<
 type LoaderArgs<Params> = {
   context: AppLoadContext
   request: Request
-  params: Pretty<Params>
+  params: Params
 }
 
 type ActionArgs<Params> = {
   context: AppLoadContext
   request: Request
-  params: Pretty<Params>
+  params: Params
 }
 
 // prettier-ignore
@@ -94,21 +93,21 @@ export type RouteArgs<
   },
 > = {
   // TODO: meta, handle, shouldRevalidate
-  links: { params: Pretty<Params> }
+  links: { params: Params }
   serverLoader: LoaderArgs<Params>
   clientLoader: LoaderArgs<Params> & {
     serverLoader: () => Promise<DataFrom<RouteModule["serverLoader"]>>
   }
 
   // TODO: clientLoader.hydrate
-  HydrateFallback: { params: Pretty<Params> }
+  HydrateFallback: { params: Params }
 
   serverAction: ActionArgs<Params>
   clientAction: LoaderArgs<Params> & {
     serverLoader: () => Promise<DataFrom<RouteModule["serverAction"]>>
   }
   default: {
-    params: Pretty<Params>
+    params: Params
     loaderData: LoaderData<
       DataFrom<RouteModule["serverLoader"]>,
       DataFrom<RouteModule["clientLoader"]>,
@@ -121,7 +120,7 @@ export type RouteArgs<
     >
   }
   ErrorBoundary: {
-    params: Pretty<Params>
+    params: Params
     error: unknown
     loaderData?: LoaderData<
       DataFrom<RouteModule["serverLoader"]>,

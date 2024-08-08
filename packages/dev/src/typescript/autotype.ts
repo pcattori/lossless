@@ -224,7 +224,6 @@ function annotateNamedExportVariableStatement(
     if (!ts.isIdentifier(decl.name)) return []
     if (decl.initializer === undefined) return []
     if (
-      ts.isFunctionDeclaration(decl.initializer) ||
       ts.isFunctionExpression(decl.initializer) ||
       ts.isArrowFunction(decl.initializer)
     ) {

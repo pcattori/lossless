@@ -7,7 +7,6 @@ import * as path from "node:path"
 import type { Config } from "../config"
 import { getRoutes, routeExports } from "../routes"
 import { getTypesPath } from "../typegen"
-import { noext } from "../utils"
 
 import type { Context } from "./context"
 
@@ -19,7 +18,7 @@ type RouteModule = {
 
 const FORCE_UPDATE_VERSION = "FORCE_UPDATE_VERSION"
 
-type AutotypeLanguageService = ts.LanguageService & {
+export type AutotypeLanguageService = ts.LanguageService & {
   getRoute: (fileName: string) => RouteModule | undefined
 }
 

@@ -26,7 +26,7 @@ type RouteExportInfo = {
 }
 
 function createJsdoc(args: { name: string; link: string }) {
-  return `/** React Router \`${args.name}\`. More info: ${args.link} */`
+  return `React Router \`${args.name}\`. More info: ${args.link}`
 }
 
 export const routeExports: Record<string, RouteExportInfo> = {

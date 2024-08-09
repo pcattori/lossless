@@ -18,7 +18,7 @@ type RouteModule = {
 
 const FORCE_UPDATE_VERSION = "FORCE_UPDATE_VERSION"
 
-export type AutotypeLanguageService = ts.LanguageService & {
+type AutotypeLanguageService = ts.LanguageService & {
   getRoute: (fileName: string) => RouteModule | undefined
 }
 

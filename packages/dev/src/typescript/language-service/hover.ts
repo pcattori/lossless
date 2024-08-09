@@ -2,10 +2,7 @@ import type ts from "typescript/lib/tsserverlibrary"
 
 import { routeExports } from "../../routes"
 import { findNodeAtPosition } from "../ast"
-import {
-  getAutotypeLanguageService,
-  type AutotypeLanguageService,
-} from "../autotype"
+import { getAutotypeLanguageService } from "../autotype"
 import { type Context } from "../context"
 
 export function decorateHover(ctx: Context) {
@@ -25,7 +22,7 @@ export function decorateHover(ctx: Context) {
     const quickinfo = autotype.getQuickInfoAtPosition(fileName, splicedIndex)
     if (!quickinfo) return
 
-    const jsdoc = getJsdoc(ctx, autotype, fileName, splicedIndex)
+    const jsdoc = getJsdoc(ctx, ls, fileName, index)
     const documentation: ts.SymbolDisplayPart[] = [
       ...(quickinfo.documentation ?? []),
       ...(jsdoc ? [jsdoc] : []),
@@ -44,7 +41,7 @@ export function decorateHover(ctx: Context) {
 
 function getJsdoc(
   ctx: Context,
-  autotype: AutotypeLanguageService,
+  autotype: ts.LanguageService,
   fileName: string,
   splicedIndex: number,
 ): ts.SymbolDisplayPart | undefined {

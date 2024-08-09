@@ -23,18 +23,17 @@ export function decorateCompletions(ctx: Context) {
     )
     if (!completions) return
 
-    completions.entries = completions.entries.map((c) => {
-      if (c.replacementSpan) {
-        return {
-          ...c,
-          replacementSpan: {
-            ...c.replacementSpan,
-            start: route.autotyped.toOriginalIndex(c.replacementSpan.start)
-              .index,
-          },
-        }
+    completions.entries = completions.entries.map((completion) => {
+      if (!completion.replacementSpan) return completion
+      return {
+        ...completion,
+        replacementSpan: {
+          ...completion.replacementSpan,
+          start: route.autotyped.toOriginalIndex(
+            completion.replacementSpan.start,
+          ).index,
+        },
       }
-      return c
     })
     if (completions.optionalReplacementSpan) {
       completions.optionalReplacementSpan = {

@@ -1,5 +1,4 @@
 import type { LinkDescriptor } from "./links"
-import type { ReactNode } from "react"
 
 export type { LinkDescriptor }
 
@@ -9,7 +8,6 @@ type Equal<X, Y> =
   (<T>() => T extends Y ? 1 : 2) ? true : false
 type IsAny<T> = 0 extends 1 & T ? true : false
 type Fn = (...args: any[]) => unknown
-type MaybePromise<T> = T | Promise<T>
 
 type IsDefined<T> = Equal<T, undefined> extends true ? false : true
 
@@ -33,9 +31,39 @@ type Serializable =
   | Set<Serializable>
   | Promise<Serializable>
 
-type ServerData = MaybePromise<
-  Exclude<Serializable, undefined | Promise<Serializable>>
->
+// prettier-ignore
+type Serialize<T> =
+  // First, let type stay as-is if its already serializable...
+  T extends Serializable ? T :
+
+  // ...then don't allow functions to be serialized...
+  T extends (...args: any[]) => unknown ? never :
+
+  // ...lastly handle inner types for all container types allowed by `turbo-stream`
+
+  // Promise
+  T extends Promise<infer U> ? Promise<Serialize<U>> :
+
+  // Map & Set
+  T extends Map<infer K, infer V> ? Map<Serialize<K>, Serialize<V>> :
+  T extends Set<infer U> ? Set<Serialize<U>> :
+
+  // Array
+  T extends [] ? [] :
+  T extends readonly [infer F, ...infer R] ? [Serialize<F>, ...Serialize<R>] :
+  T extends Array<infer U> ? Array<Serialize<U>> :
+  T extends readonly unknown[] ? readonly Serialize<T[number]>[] :
+
+  // Record
+  T extends Record<any, any> ? {[K in keyof T as [Serialize<T[K]>] extends [never] ? never : K]: Serialize<T[K]>} :
+
+  never
+
+// prettier-ignore
+type DataFrom<T> =
+  IsAny<T> extends true ? undefined :
+  T extends Fn ? Serialize<Awaited<ReturnType<T>>> :
+  undefined
 
 // prettier-ignore
 type LoaderData<
@@ -75,12 +103,6 @@ type ActionArgs<Params> = {
   request: Request
   params: Params
 }
-
-// prettier-ignore
-type DataFrom<T> =
-  IsAny<T> extends true ? undefined :
-  T extends Fn ? Awaited<ReturnType<T>> :
-  undefined
 
 export type RouteArgs<
   Params,

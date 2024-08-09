@@ -18,7 +18,7 @@ export function decorateGetDefinition(ctx: Context) {
     const splicedIndex = route.autotyped.toSplicedIndex(index)
 
     const result = autotype.getDefinitionAndBoundSpan(fileName, splicedIndex)
-    if (!result) return fallback()
+    if (!result) return
 
     return {
       definitions: result.definitions?.map(toOriginalIndex(autotype)),
@@ -45,7 +45,7 @@ export function decorateGetDefinition(ctx: Context) {
       fileName,
       splicedIndex,
     )
-    if (!definitions) return fallback()
+    if (!definitions) return
 
     return definitions.map(toOriginalIndex(autotype))
   }

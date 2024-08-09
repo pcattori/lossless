@@ -21,7 +21,7 @@ export function decorateCompletions(ctx: Context) {
       options,
       settings,
     )
-    if (!completions) return fallback()
+    if (!completions) return
 
     completions.entries = completions.entries.map((c) => {
       if (c.replacementSpan) {
@@ -83,7 +83,7 @@ export function decorateCompletions(ctx: Context) {
       preferences,
       data,
     )
-    if (!details) return fallback()
+    if (!details) return
 
     details.codeActions = details.codeActions?.map((codeAction) => {
       codeAction.changes = codeAction.changes.map((change) => {

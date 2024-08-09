@@ -1,6 +1,6 @@
 import type ts from "typescript/lib/tsserverlibrary"
 
-import { getAutotypeLanguageService } from "../autotype"
+import { getAutotypeLanguageService } from "./language-service"
 import { type Context } from "../context"
 
 export const getCompletionsAtPosition =

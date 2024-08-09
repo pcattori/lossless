@@ -4,11 +4,11 @@ import ts from "typescript"
 
 import * as path from "node:path"
 
-import type { Config } from "../config"
-import { getRoutes, routeExports } from "../routes"
-import { getTypesPath } from "../typegen"
+import type { Config } from "../../config"
+import { getRoutes, routeExports } from "../../routes"
+import { getTypesPath } from "../../typegen"
 
-import type { Context } from "./context"
+import type { Context } from "../context"
 
 type RouteModule = {
   snapshot: ts.IScriptSnapshot

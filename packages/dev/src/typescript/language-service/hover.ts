@@ -1,28 +1,20 @@
 import type ts from "typescript/lib/tsserverlibrary"
 
+import * as Autotype from "../autotype/api.hover"
 import { routeExports } from "../../routes"
 import { findNodeAtPosition } from "../ast"
-import { getAutotypeLanguageService } from "../autotype"
 import { type Context } from "../context"
 
 export function decorateHover(ctx: Context) {
   const ls = ctx.languageService
   const { getQuickInfoAtPosition } = ls
-  ls.getQuickInfoAtPosition = (fileName: string, index: number) => {
-    const fallback = () => getQuickInfoAtPosition(fileName, index)
-
-    const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return fallback()
-
-    const route = autotype.getRoute(fileName)
-    if (!route) return fallback()
-
-    const splicedIndex = route.autotyped.toSplicedIndex(index)
-
-    const quickinfo = autotype.getQuickInfoAtPosition(fileName, splicedIndex)
+  ls.getQuickInfoAtPosition = (fileName, position) => {
+    const quickinfo =
+      Autotype.getQuickInfoAtPosition(ctx)(fileName, position) ??
+      getQuickInfoAtPosition(fileName, position)
     if (!quickinfo) return
 
-    const jsdoc = getJsdoc(ctx, ls, fileName, index)
+    const jsdoc = getJsdoc(ctx, ls, fileName, position)
     const documentation: ts.SymbolDisplayPart[] = [
       ...(quickinfo.documentation ?? []),
       ...(jsdoc ? [jsdoc] : []),
@@ -31,10 +23,6 @@ export function decorateHover(ctx: Context) {
     return {
       ...quickinfo,
       documentation: documentation.length > 0 ? documentation : undefined,
-      textSpan: {
-        ...quickinfo.textSpan,
-        start: route.autotyped.toOriginalIndex(quickinfo.textSpan.start).index,
-      },
     }
   }
 }

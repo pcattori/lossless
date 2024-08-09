@@ -1,11 +1,12 @@
 import type ts from "typescript/lib/tsserverlibrary"
 
+import { routeExports } from "../../routes"
+import { findNodeAtPosition } from "../ast"
 import {
   getAutotypeLanguageService,
   type AutotypeLanguageService,
 } from "../autotype"
 import { type Context } from "../context"
-import { routeExports } from "../../routes"
 
 export function decorateHover(ctx: Context) {
   const ls = ctx.languageService
@@ -101,18 +102,4 @@ function getExportName(ctx: Context, node: ts.Node) {
     if (!ctx.ts.isIdentifier(node.name)) return
     return node.name.text
   }
-}
-
-function findNodeAtPosition(node: ts.Node, pos: number): ts.Node | undefined {
-  if (pos < node.getStart() || node.getEnd() < pos) return
-  for (const child of node.getChildren()) {
-    if (pos < child.getStart()) return
-    if (pos > child.getEnd()) continue
-
-    const found = findNodeAtPosition(child, pos)
-    if (found) return found
-
-    return child
-  }
-  return node
 }

@@ -3,7 +3,7 @@ import type ts from "typescript/lib/tsserverlibrary"
 import type { Context } from "./context"
 import * as Autotype from "./autotype"
 import { getRoutes, routeExports } from "../routes"
-import { findNodeAtPosition } from "./ast"
+import * as AST from "./ast"
 
 export function decorateLanguageService(ctx: Context) {
   const ls = ctx.languageService
@@ -124,7 +124,7 @@ function getJsdoc(
   if (!route) return
 
   const sourceFile = ctx.languageService.getProgram()?.getSourceFile(fileName)
-  const node = sourceFile && findNodeAtPosition(sourceFile, position)
+  const node = sourceFile && AST.findNodeAtPosition(sourceFile, position)
   if (!node) return
   const exportName = getExportName(ctx, node)
   if (!exportName) return

@@ -1,2 +1,2 @@
-export { decorateLanguageService } from "./language-service"
+export { decorateLanguageService } from "./decorate"
 export { typecheck } from "./typecheck"

@@ -2,7 +2,7 @@ import ts from "typescript"
 import * as path from "node:path"
 
 import type { Config } from "../config"
-import { decorateLanguageService } from "./language-service"
+import { decorateLanguageService } from "./decorate"
 
 export function typecheck(config: Config) {
   const { fileNames, options } = parseTsconfig(config)

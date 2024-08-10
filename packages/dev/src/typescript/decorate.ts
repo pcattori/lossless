@@ -91,7 +91,13 @@ export function decorateLanguageService(ctx: Context) {
       getQuickInfoAtPosition(fileName, position)
     if (!quickinfo) return
 
-    const jsdoc = getJsdoc(ctx, fileName, position)
+    const route = getRoutes(ctx.config).get(fileName)
+    if (!route) return quickinfo
+
+    const sourceFile = ctx.languageService.getProgram()?.getSourceFile(fileName)
+    const node = sourceFile && AST.findNodeAtPosition(sourceFile, position)
+    const exportName = node && AST.getRouteExportName(ctx, node)
+    const jsdoc = exportName ? routeExports[exportName]?.jsdoc : undefined
 
     const documentation: ts.SymbolDisplayPart[] = [
       ...(quickinfo.documentation ?? []),
@@ -112,69 +118,5 @@ export function decorateLanguageService(ctx: Context) {
     return (
       Autotype.provideInlayHints(ctx)(...args) ?? provideInlayHints(...args)
     )
-  }
-}
-
-function getJsdoc(
-  ctx: Context,
-  fileName: string,
-  position: number,
-): ts.SymbolDisplayPart | undefined {
-  const route = getRoutes(ctx.config).get(fileName)
-  if (!route) return
-
-  const sourceFile = ctx.languageService.getProgram()?.getSourceFile(fileName)
-  const node = sourceFile && AST.findNodeAtPosition(sourceFile, position)
-  if (!node) return
-  const exportName = getExportName(ctx, node)
-  if (!exportName) return
-  const jsdoc = routeExports[exportName]?.jsdoc
-  if (!jsdoc) return
-  return {
-    kind: "text",
-    text: "\n\n" + jsdoc,
-  }
-}
-
-function getExportName(ctx: Context, node: ts.Node) {
-  if (node.kind === ctx.ts.SyntaxKind.DefaultKeyword) {
-    return "default"
-  }
-  if (node.kind === ctx.ts.SyntaxKind.FunctionKeyword) {
-    return getExportName(ctx, node.parent)
-  }
-
-  if (ctx.ts.isIdentifier(node)) {
-    return getExportName(ctx, node.parent)
-  }
-
-  if (ctx.ts.isExportAssignment(node)) {
-    if (node.isExportEquals) return
-    if (!ctx.ts.isArrowFunction(node.expression)) return
-    return "default"
-  }
-
-  if (ctx.ts.isFunctionDeclaration(node)) {
-    const exported = node.modifiers?.find(
-      (m) => m.kind === ctx.ts.SyntaxKind.ExportKeyword,
-    )
-    if (!exported) return
-    const defaulted = node.modifiers?.find(
-      (m) => m.kind === ctx.ts.SyntaxKind.DefaultKeyword,
-    )
-    if (defaulted) return "default"
-    return node.name?.text
-  }
-  if (ctx.ts.isVariableDeclaration(node)) {
-    const varDeclList = node.parent
-    if (!ctx.ts.isVariableDeclarationList(varDeclList)) return
-    const varStmt = varDeclList.parent
-    if (!ctx.ts.isVariableStatement(varStmt)) return
-    const exported = varStmt.modifiers?.find(
-      (m) => m.kind === ctx.ts.SyntaxKind.ExportKeyword,
-    )
-    if (!exported) return
-    if (!ctx.ts.isIdentifier(node.name)) return
-    return node.name.text
   }
 }

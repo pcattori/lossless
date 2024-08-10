@@ -1,5 +1,7 @@
 import * as path from "node:path"
 
+import type ts from "typescript/lib/tsserverlibrary"
+
 import type { Config } from "./config"
 
 export type Route = {
@@ -21,12 +23,18 @@ export function getRoutes(config: Config): Map<string, Route> {
 }
 
 type RouteExportInfo = {
-  jsdoc: string
+  jsdoc: ts.SymbolDisplayPart
   returnType?: string
 }
 
-function createJsdoc(args: { name: string; link: string }) {
-  return `React Router \`${args.name}\`. More info: ${args.link}`
+function createJsdoc(args: {
+  name: string
+  link: string
+}): ts.SymbolDisplayPart {
+  return {
+    kind: "text",
+    text: `React Router \`${args.name}\`. More info: ${args.link}`,
+  }
 }
 
 export const routeExports: Record<string, RouteExportInfo> = {

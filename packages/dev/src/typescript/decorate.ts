@@ -44,17 +44,17 @@ export function decorateLanguageService(ctx: Context) {
 
   const { getSyntacticDiagnostics } = ls
   ls.getSyntacticDiagnostics = (...args) =>
-    Autotype.getSyntacticDiagnostics(ctx)(...args) ??
+    nonempty(Autotype.getSyntacticDiagnostics(ctx)(...args)) ??
     getSyntacticDiagnostics(...args)
 
   const { getSemanticDiagnostics } = ls
   ls.getSemanticDiagnostics = (...args) =>
-    Autotype.getSemanticDiagnostics(ctx)(...args) ??
+    nonempty(Autotype.getSemanticDiagnostics(ctx)(...args)) ??
     getSemanticDiagnostics(...args)
 
   const { getSuggestionDiagnostics } = ls
   ls.getSuggestionDiagnostics = (...args) =>
-    Autotype.getSuggestionDiagnostics(ctx)(...args) ??
+    nonempty(Autotype.getSuggestionDiagnostics(ctx)(...args)) ??
     getSuggestionDiagnostics(...args)
 
   // diagnostics
@@ -91,5 +91,12 @@ export function decorateLanguageService(ctx: Context) {
 
   const { provideInlayHints } = ls
   ls.provideInlayHints = (...args) =>
-    Autotype.provideInlayHints(ctx)(...args) ?? provideInlayHints(...args)
+    nonempty(Autotype.provideInlayHints(ctx)(...args)) ??
+    provideInlayHints(...args)
+}
+
+/** Converts empty arrays to `undefined` for easier interop with `??` */
+function nonempty<T extends any[]>(arg: T): T | undefined {
+  if (arg.length === 0) return
+  return arg
 }

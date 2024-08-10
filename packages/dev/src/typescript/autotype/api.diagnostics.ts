@@ -1,6 +1,6 @@
 import type ts from "typescript/lib/tsserverlibrary"
 
-import { getAutotypeLanguageService } from "./language-service"
+import { AutotypedRoute, getAutotypeLanguageService } from "./language-service"
 import { type Context } from "../context"
 
 export const getSyntacticDiagnostics =
@@ -16,7 +16,7 @@ export const getSyntacticDiagnostics =
 
     return autotype
       .getSyntacticDiagnostics(fileName)
-      .map(remapSpans(sourceFile, route.autotyped.toOriginalIndex))
+      .map(remapSpans(sourceFile, route.autotyped))
   }
 
 export const getSemanticDiagnostics =
@@ -32,7 +32,7 @@ export const getSemanticDiagnostics =
 
     return autotype
       .getSemanticDiagnostics(fileName)
-      .map(remapSpans(sourceFile, route.autotyped.toOriginalIndex))
+      .map(remapSpans(sourceFile, route.autotyped))
   }
 
 export const getSuggestionDiagnostics =
@@ -48,21 +48,18 @@ export const getSuggestionDiagnostics =
 
     return autotype
       .getSuggestionDiagnostics(fileName)
-      .map(remapSpans(sourceFile, route.autotyped.toOriginalIndex))
+      .map(remapSpans(sourceFile, route.autotyped))
   }
 
 const remapSpans =
   <T extends ts.Diagnostic | ts.DiagnosticWithLocation>(
     sourceFile: ts.SourceFile,
-    toOriginalIndex: (splicedIndex: number) => {
-      index: number
-      spliced: boolean
-    },
+    route: AutotypedRoute,
   ) =>
   (diagnostic: T): T => {
     if (!diagnostic.start) return diagnostic
 
-    const { index, spliced } = toOriginalIndex(diagnostic.start)
+    const { index, spliced } = route.toOriginalIndex(diagnostic.start)
     let length = diagnostic.length
     if (spliced) {
       // avoid diagnostics in splices from overflowing onto unrelated code

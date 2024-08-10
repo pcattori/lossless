@@ -262,7 +262,7 @@ function annotateFunction(
   ].filter((x) => x !== null)
 }
 
-class AutotypedRoute {
+export class AutotypedRoute {
   private _originalCode: string
   private _splices: Splice[]
 

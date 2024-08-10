@@ -12,74 +12,50 @@ export function decorateLanguageService(ctx: Context) {
   // --------------------------------------------------------------------------
 
   const { getCompletionsAtPosition } = ls
-  ls.getCompletionsAtPosition = (...args) => {
-    return (
-      Autotype.getCompletionsAtPosition(ctx)(...args) ??
-      getCompletionsAtPosition(...args)
-    )
-  }
+  ls.getCompletionsAtPosition = (...args) =>
+    Autotype.getCompletionsAtPosition(ctx)(...args) ??
+    getCompletionsAtPosition(...args)
 
   const { getCompletionEntryDetails } = ls
-  ls.getCompletionEntryDetails = (...args) => {
-    return (
-      Autotype.getCompletionEntryDetails(ctx)(...args) ??
-      getCompletionEntryDetails(...args)
-    )
-  }
+  ls.getCompletionEntryDetails = (...args) =>
+    Autotype.getCompletionEntryDetails(ctx)(...args) ??
+    getCompletionEntryDetails(...args)
 
   const { getSignatureHelpItems } = ls
-  ls.getSignatureHelpItems = (...args) => {
-    return (
-      Autotype.getSignatureHelpItems(ctx)(...args) ??
-      getSignatureHelpItems(...args)
-    )
-  }
+  ls.getSignatureHelpItems = (...args) =>
+    Autotype.getSignatureHelpItems(ctx)(...args) ??
+    getSignatureHelpItems(...args)
 
   // definitions
   // --------------------------------------------------------------------------
 
   const { getDefinitionAndBoundSpan } = ls
-  ls.getDefinitionAndBoundSpan = (...args) => {
-    return (
-      Autotype.getDefinitionAndBoundSpan(ctx)(...args) ??
-      getDefinitionAndBoundSpan(...args)
-    )
-  }
+  ls.getDefinitionAndBoundSpan = (...args) =>
+    Autotype.getDefinitionAndBoundSpan(ctx)(...args) ??
+    getDefinitionAndBoundSpan(...args)
 
   const { getTypeDefinitionAtPosition } = ls
-  ls.getTypeDefinitionAtPosition = (...args) => {
-    return (
-      Autotype.getTypeDefinitionAtPosition(ctx)(...args) ??
-      getTypeDefinitionAtPosition(...args)
-    )
-  }
+  ls.getTypeDefinitionAtPosition = (...args) =>
+    Autotype.getTypeDefinitionAtPosition(ctx)(...args) ??
+    getTypeDefinitionAtPosition(...args)
 
   // diagnostics
   // --------------------------------------------------------------------------
 
   const { getSyntacticDiagnostics } = ls
-  ls.getSyntacticDiagnostics = (...args) => {
-    return (
-      Autotype.getSyntacticDiagnostics(ctx)(...args) ??
-      getSyntacticDiagnostics(...args)
-    )
-  }
+  ls.getSyntacticDiagnostics = (...args) =>
+    Autotype.getSyntacticDiagnostics(ctx)(...args) ??
+    getSyntacticDiagnostics(...args)
 
   const { getSemanticDiagnostics } = ls
-  ls.getSemanticDiagnostics = (...args) => {
-    return (
-      Autotype.getSemanticDiagnostics(ctx)(...args) ??
-      getSemanticDiagnostics(...args)
-    )
-  }
+  ls.getSemanticDiagnostics = (...args) =>
+    Autotype.getSemanticDiagnostics(ctx)(...args) ??
+    getSemanticDiagnostics(...args)
 
   const { getSuggestionDiagnostics } = ls
-  ls.getSuggestionDiagnostics = (...args) => {
-    return (
-      Autotype.getSuggestionDiagnostics(ctx)(...args) ??
-      getSuggestionDiagnostics(...args)
-    )
-  }
+  ls.getSuggestionDiagnostics = (...args) =>
+    Autotype.getSuggestionDiagnostics(ctx)(...args) ??
+    getSuggestionDiagnostics(...args)
 
   // diagnostics
   // --------------------------------------------------------------------------
@@ -114,9 +90,6 @@ export function decorateLanguageService(ctx: Context) {
   // --------------------------------------------------------------------------
 
   const { provideInlayHints } = ls
-  ls.provideInlayHints = (...args) => {
-    return (
-      Autotype.provideInlayHints(ctx)(...args) ?? provideInlayHints(...args)
-    )
-  }
+  ls.provideInlayHints = (...args) =>
+    Autotype.provideInlayHints(ctx)(...args) ?? provideInlayHints(...args)
 }

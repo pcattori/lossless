@@ -6,7 +6,7 @@ export function findNodeAtPosition(
 ): ts.Node | undefined {
   if (pos < node.getStart() || node.getEnd() < pos) return
   for (const child of node.getChildren()) {
-    if (pos < child.getStart()) return
+    if (pos < child.getStart()) break
     if (pos > child.getEnd()) continue
 
     const found = findNodeAtPosition(child, pos)

@@ -60,3 +60,50 @@ export function getRouteExportName(ctx: Context, node: ts.Node) {
     return node.name.text
   }
 }
+
+export function getExportNames(
+  ts: Context["ts"],
+  sourceFile: ts.SourceFile,
+): Set<string> {
+  const exports = new Set<string>()
+
+  sourceFile.statements.forEach((stmt) => {
+    if (ts.isExportDeclaration(stmt)) {
+      if (stmt.exportClause && ts.isNamedExports(stmt.exportClause)) {
+        stmt.exportClause.elements.forEach((element) =>
+          exports.add(element.name.text),
+        )
+      }
+    }
+    if (ts.isVariableStatement(stmt) && exported(ts, stmt)) {
+      stmt.declarationList.declarations.forEach((decl) => {
+        if (ts.isIdentifier(decl.name)) {
+          exports.add(decl.name.text)
+        }
+      })
+    }
+    if (ts.isFunctionDeclaration(stmt) && exported(ts, stmt)) {
+      if (defaulted(ts, stmt)) {
+        exports.add("default")
+      } else if (stmt.name) {
+        exports.add(stmt.name.text)
+      }
+    }
+    if (ts.isExportAssignment(stmt)) {
+      exports.add("default")
+    }
+  })
+
+  return exports
+}
+
+function exported(
+  ts: Context["ts"],
+  stmt: ts.VariableStatement | ts.FunctionDeclaration,
+) {
+  return stmt.modifiers?.find((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+}
+
+function defaulted(ts: Context["ts"], stmt: ts.FunctionDeclaration) {
+  return stmt.modifiers?.find((m) => m.kind === ts.SyntaxKind.DefaultKeyword)
+}

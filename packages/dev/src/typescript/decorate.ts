@@ -17,10 +17,54 @@ export function decorateLanguageService(ctx: Context) {
   // --------------------------------------------------------------------------
 
   const { getCompletionsAtPosition } = ls
-  ls.getCompletionsAtPosition = (...args) =>
-    isRoute(args[0])
-      ? Autotype.getCompletionsAtPosition(ctx)(...args)
-      : getCompletionsAtPosition(...args)
+  ls.getCompletionsAtPosition = (fileName, position, ...rest) => {
+    const completions = isRoute(fileName)
+      ? Autotype.getCompletionsAtPosition(ctx)(fileName, position, ...rest)
+      : getCompletionsAtPosition(fileName, position, ...rest)
+
+    const route = getRoutes(ctx.config).get(fileName)
+    if (!route) return completions
+
+    const sourceFile = ctx.languageService.getProgram()?.getSourceFile(fileName)
+    if (!sourceFile) return completions
+
+    const node = AST.findNodeAtPosition(sourceFile, position)
+    if (!node) return completions
+
+    if (!ctx.ts.isStatement(node.parent)) return completions
+    if (!ctx.ts.isSourceFile(node.parent.parent)) return completions
+
+    const { line } = sourceFile.getLineAndCharacterOfPosition(position)
+    const lineStart = sourceFile.getPositionOfLineAndCharacter(line, 0)
+    const normalizedLine = sourceFile.text
+      .slice(lineStart, position)
+      .trim()
+      .replace(/\s+g/, " ")
+    const exports = AST.getExportNames(ctx.ts, sourceFile)
+
+    const routeExportCompletions = Object.entries(routeExports).flatMap(
+      ([key, routeExport]) =>
+        routeExport
+          .completions(ctx)
+          .filter(() => !exports.has(key))
+          .filter((completion) => fzf(normalizedLine, completion.name))
+          .map((completion) => ({
+            ...completion,
+            replacementSpan: { start: lineStart, length: position - lineStart },
+          })),
+    )
+    if (routeExportCompletions.length > 0) {
+      return {
+        isGlobalCompletion: false,
+        isMemberCompletion: false,
+        isNewIdentifierLocation: false,
+        isIncomplete: true,
+        entries: routeExportCompletions,
+      }
+    }
+
+    return completions
+  }
 
   const { getCompletionEntryDetails } = ls
   ls.getCompletionEntryDetails = (...args) =>
@@ -107,4 +151,20 @@ export function decorateLanguageService(ctx: Context) {
     isRoute(args[0])
       ? Autotype.provideInlayHints(ctx)(...args)
       : provideInlayHints(...args)
+}
+
+function fzf(pattern: string, target: string): boolean {
+  let patternIndex = 0
+  let targetIndex = 0
+
+  while (patternIndex < pattern.length && targetIndex < target.length) {
+    if (
+      pattern[patternIndex]?.toLowerCase() ===
+      target[targetIndex]?.toLowerCase()
+    ) {
+      patternIndex += 1
+    }
+    targetIndex += 1
+  }
+  return patternIndex === pattern.length
 }

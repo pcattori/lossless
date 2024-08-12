@@ -31,8 +31,11 @@ export function decorateLanguageService(ctx: Context) {
     const node = AST.findNodeAtPosition(sourceFile, position)
     if (!node) return completions
 
-    if (!ctx.ts.isStatement(node.parent)) return completions
-    if (!ctx.ts.isSourceFile(node.parent.parent)) return completions
+    const isTopLevel =
+      ctx.ts.isSourceFile(node.parent) ||
+      (ctx.ts.isStatement(node.parent) &&
+        ctx.ts.isSourceFile(node.parent.parent))
+    if (!isTopLevel) return completions
 
     const { line } = sourceFile.getLineAndCharacterOfPosition(position)
     const lineStart = sourceFile.getPositionOfLineAndCharacter(line, 0)

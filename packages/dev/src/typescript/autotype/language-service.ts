@@ -177,8 +177,8 @@ function annotateDefaultExportFunctionDeclaration(
 ): Splice[] {
   if (!ts.isFunctionDeclaration(stmt)) return []
 
-  let exp = AST.exported(ts, stmt)
-  if (!exp) return []
+  if (!AST.exported(ts, stmt)) return []
+  if (!AST.defaulted(ts, stmt)) return []
 
   return annotateFunction(stmt, typesSource, "default")
 }

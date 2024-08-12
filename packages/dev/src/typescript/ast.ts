@@ -95,6 +95,6 @@ export function exported(
   return stmt.modifiers?.find((m) => m.kind === ts.SyntaxKind.ExportKeyword)
 }
 
-function defaulted(ts: Context["ts"], stmt: ts.FunctionDeclaration) {
+export function defaulted(ts: Context["ts"], stmt: ts.FunctionDeclaration) {
   return stmt.modifiers?.find((m) => m.kind === ts.SyntaxKind.DefaultKeyword)
 }

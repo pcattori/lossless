@@ -24,105 +24,75 @@ export function getRoutes(config: Config): Map<string, Route> {
 }
 
 type RouteExportInfo = {
-  jsdoc: ts.SymbolDisplayPart
   returnType?: string
-  completions: (ctx: Context) => ts.CompletionEntry[] // TODO
+  documentation: ts.SymbolDisplayPart[]
 }
 
-function createJsdoc(args: {
+function createDocumentation(args: {
   name: string
   link: string
-}): ts.SymbolDisplayPart {
-  return {
-    kind: "text",
-    text: `React Router \`${args.name}\`. More info: ${args.link}`,
-  }
-}
-
-function createFunctionCompletion(
-  ctx: Context,
-  name: string,
-): ts.CompletionEntry {
-  return {
-    name,
-    insertText: `export function ${name}() {}`,
-    kind: ctx.ts.ScriptElementKind.functionElement,
-    kindModifiers: ctx.ts.ScriptElementKindModifier.exportedModifier,
-    sortText: "0",
-    labelDetails: {
-      description: "React Router",
+}): ts.SymbolDisplayPart[] {
+  return [
+    {
+      kind: "text",
+      text: `React Router \`${args.name}\` export\n\nDocs: ${args.link}`,
     },
-  }
+  ]
 }
 
 export const routeExports: Record<string, RouteExportInfo> = {
   links: {
-    jsdoc: createJsdoc({
+    returnType: `import("lossless/types").LinkDescriptor[]`,
+    documentation: createDocumentation({
       name: "links",
       link: `https://remix.run/docs/en/main/route/links`,
     }),
-    returnType: `import("lossless/types").LinkDescriptor[]`,
-    completions: (ctx) => [createFunctionCompletion(ctx, "links")],
   },
   serverLoader: {
-    jsdoc: createJsdoc({
+    documentation: createDocumentation({
       name: "serverLoader",
       link: `https://remix.run/docs/en/main/route/loader`,
     }),
-    completions: (ctx) => [createFunctionCompletion(ctx, "serverLoader")],
   },
   clientLoader: {
-    jsdoc: createJsdoc({
+    documentation: createDocumentation({
       name: "clientLoader",
       link: `https://remix.run/docs/en/main/route/client-loader`,
     }),
-    completions: (ctx) => [createFunctionCompletion(ctx, "clientLoader")],
   },
   // TODO clientLoader.hydrate?
   HydrateFallback: {
-    jsdoc: createJsdoc({
+    documentation: createDocumentation({
       name: "HydrateFallback",
       link: `https://remix.run/docs/en/main/route/hydrate-fallback`,
     }),
     returnType: `import("react").ReactNode`,
-    completions: (ctx) => [createFunctionCompletion(ctx, "HydrateFallback")],
   },
   serverAction: {
-    jsdoc: createJsdoc({
+    documentation: createDocumentation({
       name: "serverAction",
       link: `https://remix.run/docs/en/main/route/action`,
     }),
-    completions: (ctx) => [createFunctionCompletion(ctx, "serverAction")],
   },
   clientAction: {
-    jsdoc: createJsdoc({
+    documentation: createDocumentation({
       name: "clientAction",
       link: `https://remix.run/docs/en/main/route/client-action`,
     }),
-    completions: (ctx) => [createFunctionCompletion(ctx, "clientAction")],
   },
   default: {
-    jsdoc: createJsdoc({
+    documentation: createDocumentation({
       name: "default",
       link: `https://remix.run/docs/en/main/route/component`,
     }),
     returnType: `import("react").ReactNode`,
-    completions: (ctx) => [
-      {
-        name: `export default function Component() {}`,
-        kind: ctx.ts.ScriptElementKind.functionElement,
-        kindModifiers: ctx.ts.ScriptElementKindModifier.exportedModifier,
-        sortText: "0",
-      },
-    ],
   },
   ErrorBoundary: {
-    jsdoc: createJsdoc({
+    documentation: createDocumentation({
       name: "ErrorBoundary",
       link: `https://remix.run/docs/en/main/route/error-boundary`,
     }),
     returnType: `import("react").ReactNode`,
-    completions: (ctx) => [createFunctionCompletion(ctx, "ErrorBoundary")],
   },
   // TODO handle
   // TODO meta

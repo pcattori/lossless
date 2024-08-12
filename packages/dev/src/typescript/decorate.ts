@@ -22,8 +22,7 @@ export function decorateLanguageService(ctx: Context) {
       ? Autotype.getCompletionsAtPosition(ctx)(fileName, position, ...rest)
       : getCompletionsAtPosition(fileName, position, ...rest)
 
-    const route = getRoutes(ctx.config).get(fileName)
-    if (!route) return completions
+    if (!isRoute(fileName)) return completions
 
     const sourceFile = ctx.languageService.getProgram()?.getSourceFile(fileName)
     if (!sourceFile) return completions
@@ -45,19 +44,39 @@ export function decorateLanguageService(ctx: Context) {
       .replace(/\s+g/, " ")
     const exports = AST.getExportNames(ctx.ts, sourceFile)
 
-    const routeExportCompletions = Object.entries(routeExports).flatMap(
-      ([key, routeExport]) =>
-        routeExport
-          .completions(ctx)
-          .filter(() => !exports.has(key))
-          .filter((completion) =>
-            fzf(normalizedLine, completion?.insertText ?? completion.name),
-          )
-          .map((completion) => ({
-            ...completion,
-            replacementSpan: { start: lineStart, length: position - lineStart },
-          })),
+    const routeExportCompletions: ts.CompletionEntry[] = Object.keys(
+      routeExports,
     )
+      .map((key) => {
+        if (exports.has(key)) return null
+
+        const insertText =
+          key === "default"
+            ? `export default function Component() {}`
+            : `export function ${key}() {}`
+        if (!fzf(normalizedLine, insertText)) return null
+
+        const completion: ts.CompletionEntry = {
+          name: key,
+          insertText,
+          kind: ctx.ts.ScriptElementKind.functionElement,
+          kindModifiers: ctx.ts.ScriptElementKindModifier.exportedModifier,
+          sortText: "0",
+          labelDetails: {
+            description: "React Router",
+          },
+          data: {
+            exportName: key, // TS needs this
+            __reactRouter: key,
+          } as any,
+        }
+
+        return {
+          ...completion,
+          replacementSpan: { start: lineStart, length: position - lineStart },
+        }
+      })
+      .filter((x) => x !== null)
     if (routeExportCompletions.length > 0) {
       return {
         isGlobalCompletion: false,
@@ -72,10 +91,22 @@ export function decorateLanguageService(ctx: Context) {
   }
 
   const { getCompletionEntryDetails } = ls
-  ls.getCompletionEntryDetails = (...args) =>
-    isRoute(args[0])
+  ls.getCompletionEntryDetails = (...args) => {
+    const data = args[6] as { __reactRouter?: string }
+    if (data.__reactRouter) {
+      const key = data.__reactRouter
+      return {
+        name: key,
+        kind: ctx.ts.ScriptElementKind.functionElement,
+        kindModifiers: ctx.ts.ScriptElementKindModifier.exportedModifier,
+        documentation: routeExports[key]?.documentation ?? [],
+        displayParts: [],
+      }
+    }
+    return isRoute(args[0])
       ? Autotype.getCompletionEntryDetails(ctx)(...args)
       : getCompletionEntryDetails(...args)
+  }
 
   const { getSignatureHelpItems } = ls
   ls.getSignatureHelpItems = (...args) =>
@@ -135,11 +166,13 @@ export function decorateLanguageService(ctx: Context) {
     const sourceFile = ctx.languageService.getProgram()?.getSourceFile(fileName)
     const node = sourceFile && AST.findNodeAtPosition(sourceFile, position)
     const exportName = node && AST.getRouteExportName(ctx, node)
-    const jsdoc = exportName ? routeExports[exportName]?.jsdoc : undefined
+    const routeExportDocs = exportName
+      ? routeExports[exportName]?.documentation
+      : undefined
 
     const documentation: ts.SymbolDisplayPart[] = [
       ...(quickinfo.documentation ?? []),
-      ...(jsdoc ? [jsdoc] : []),
+      ...(routeExportDocs ?? []),
     ]
 
     return {

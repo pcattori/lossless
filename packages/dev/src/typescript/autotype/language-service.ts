@@ -106,6 +106,7 @@ export function getAutotypeLanguageService(ctx: Context) {
 
       const { text: code } = sourceFile
       const autotyped = autotypeRoute(ctx.config, fileName, code)
+      ctx.logger?.info(`WOW\n\n${autotyped.code()}\n\n`)
       const snapshot = ts.ScriptSnapshot.fromString(autotyped.code())
       snapshot.getChangeRange = (_) => undefined
 
@@ -198,12 +199,8 @@ function annotateNamedExportFunctionDeclaration(
   typesSource: string,
 ): Splice[] {
   if (!ts.isFunctionDeclaration(stmt)) return []
-  let exp = AST.exported(ts, stmt)
-  if (!exp) return []
-  const _default = stmt.modifiers?.find(
-    (m) => m.kind === ts.SyntaxKind.DefaultKeyword,
-  )
-  if (_default) return []
+  if (!AST.exported(ts, stmt)) return []
+  if (AST.defaulted(ts, stmt)) return []
 
   const name = stmt.name?.text
   if (!name) return []
@@ -216,8 +213,7 @@ function annotateNamedExportVariableStatement(
   typesSource: string,
 ): Splice[] {
   if (!ts.isVariableStatement(stmt)) return []
-  let exp = AST.exported(ts, stmt)
-  if (!exp) return []
+  if (!AST.exported(ts, stmt)) return []
 
   return stmt.declarationList.declarations.flatMap((decl) => {
     if (!ts.isIdentifier(decl.name)) return []

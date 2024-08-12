@@ -42,7 +42,7 @@ function createDocumentation(args: {
 
 export const routeExports: Record<string, RouteExportInfo> = {
   links: {
-    returnType: `import("lossless/types").LinkDescriptor[]`,
+    returnType: `import("lossless").LinkDescriptor[]`,
     documentation: createDocumentation({
       name: "links",
       link: `https://remix.run/docs/en/main/route/links`,

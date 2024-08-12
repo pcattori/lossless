@@ -7,8 +7,6 @@ export const provideInlayHints =
   (ctx: Context): ts.LanguageService["provideInlayHints"] =>
   (fileName, span, preferences) => {
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return []
-
     const route = autotype.getRoute(fileName)
     if (!route) return []
 

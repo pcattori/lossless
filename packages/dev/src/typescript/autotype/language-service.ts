@@ -22,7 +22,7 @@ type AutotypeLanguageService = ts.LanguageService & {
   getRoute: (fileName: string) => RouteModule | undefined
 }
 
-let CACHED: AutotypeLanguageService | null = null
+let CACHED: AutotypeLanguageService
 
 export function getAutotypeLanguageService(ctx: Context) {
   if (CACHED) return CACHED

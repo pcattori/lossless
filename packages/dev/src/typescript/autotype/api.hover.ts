@@ -7,8 +7,6 @@ export const getQuickInfoAtPosition =
   (ctx: Context): ts.LanguageService["getQuickInfoAtPosition"] =>
   (fileName, position) => {
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return
-
     const route = autotype.getRoute(fileName)
     if (!route) return
 

@@ -7,8 +7,6 @@ export const getCompletionsAtPosition =
   (ctx: Context): ts.LanguageService["getCompletionsAtPosition"] =>
   (fileName, position, options, settings) => {
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return
-
     const route = autotype.getRoute(fileName)
     if (!route) return
 
@@ -48,8 +46,6 @@ export const getCompletionEntryDetails =
   (ctx: Context): ts.LanguageService["getCompletionEntryDetails"] =>
   (fileName, position, entryName, formatOptions, source, preferences, data) => {
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return
-
     const route = autotype.getRoute(fileName)
     if (!route) return
 
@@ -87,8 +83,6 @@ export const getSignatureHelpItems =
   (ctx: Context): ts.LanguageService["getSignatureHelpItems"] =>
   (fileName, position, options) => {
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return
-
     const route = autotype.getRoute(fileName)
     if (!route) return
 

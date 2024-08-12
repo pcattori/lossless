@@ -7,7 +7,6 @@ export const getSyntacticDiagnostics =
   (ctx: Context): ts.LanguageService["getSyntacticDiagnostics"] =>
   (fileName: string) => {
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return []
     const route = autotype.getRoute(fileName)
     if (!route) return []
 
@@ -23,7 +22,6 @@ export const getSemanticDiagnostics =
   (ctx: Context): ts.LanguageService["getSemanticDiagnostics"] =>
   (fileName) => {
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return []
     const route = autotype.getRoute(fileName)
     if (!route) return []
 
@@ -39,7 +37,6 @@ export const getSuggestionDiagnostics =
   (ctx: Context): ts.LanguageService["getSuggestionDiagnostics"] =>
   (fileName) => {
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return []
     const route = autotype.getRoute(fileName)
     if (!route) return []
 

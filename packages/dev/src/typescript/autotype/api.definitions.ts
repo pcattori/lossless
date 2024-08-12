@@ -7,7 +7,6 @@ export const getDefinitionAndBoundSpan =
   (ctx: Context): ts.LanguageService["getDefinitionAndBoundSpan"] =>
   (fileName, position) => {
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return
     const route = autotype.getRoute(fileName)
     if (!route) return
 
@@ -28,7 +27,6 @@ export const getTypeDefinitionAtPosition =
   (ctx: Context): ts.LanguageService["getTypeDefinitionAtPosition"] =>
   (fileName, position) => {
     const autotype = getAutotypeLanguageService(ctx)
-    if (!autotype) return
     const route = autotype.getRoute(fileName)
     if (!route) return
 

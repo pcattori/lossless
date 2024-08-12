@@ -155,9 +155,9 @@ export function decorateLanguageService(ctx: Context) {
 
   const { getQuickInfoAtPosition } = ls
   ls.getQuickInfoAtPosition = (fileName, position) => {
-    const quickinfo =
-      Autotype.getQuickInfoAtPosition(ctx)(fileName, position) ??
-      getQuickInfoAtPosition(fileName, position)
+    const quickinfo = isRoute(fileName)
+      ? Autotype.getQuickInfoAtPosition(ctx)(fileName, position)
+      : getQuickInfoAtPosition(fileName, position)
     if (!quickinfo) return
 
     const route = getRoutes(ctx.config).get(fileName)

@@ -7,7 +7,7 @@ import * as path from "node:path"
 import type { Config } from "../../config"
 import { getRoutes, routeExports } from "../../routes"
 import { getTypesPath } from "../../typegen"
-
+import * as AST from "../ast"
 import type { Context } from "../context"
 
 type RouteModule = {
@@ -177,7 +177,7 @@ function annotateDefaultExportFunctionDeclaration(
 ): Splice[] {
   if (!ts.isFunctionDeclaration(stmt)) return []
 
-  let exp = exported(stmt)
+  let exp = AST.exported(ts, stmt)
   if (!exp) return []
 
   return annotateFunction(stmt, typesSource, "default")
@@ -198,7 +198,7 @@ function annotateNamedExportFunctionDeclaration(
   typesSource: string,
 ): Splice[] {
   if (!ts.isFunctionDeclaration(stmt)) return []
-  let exp = exported(stmt)
+  let exp = AST.exported(ts, stmt)
   if (!exp) return []
   const _default = stmt.modifiers?.find(
     (m) => m.kind === ts.SyntaxKind.DefaultKeyword,
@@ -216,7 +216,7 @@ function annotateNamedExportVariableStatement(
   typesSource: string,
 ): Splice[] {
   if (!ts.isVariableStatement(stmt)) return []
-  let exp = exported(stmt)
+  let exp = AST.exported(ts, stmt)
   if (!exp) return []
 
   return stmt.declarationList.declarations.flatMap((decl) => {
@@ -315,13 +315,6 @@ export class AutotypedRoute {
     }
     return { index: Math.max(0, splicedIndex - spliceOffset), spliced: false }
   }
-}
-
-function exported(stmt: ts.VariableStatement | ts.FunctionDeclaration) {
-  let exported = stmt.modifiers?.find(
-    (m) => m.kind === ts.SyntaxKind.ExportKeyword,
-  )
-  return exported
 }
 
 function* reverse<T>(array: T[]): Generator<T> {

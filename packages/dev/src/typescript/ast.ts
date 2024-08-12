@@ -37,14 +37,8 @@ export function getRouteExportName(ctx: Context, node: ts.Node) {
   }
 
   if (ctx.ts.isFunctionDeclaration(node)) {
-    const exported = node.modifiers?.find(
-      (m) => m.kind === ctx.ts.SyntaxKind.ExportKeyword,
-    )
-    if (!exported) return
-    const defaulted = node.modifiers?.find(
-      (m) => m.kind === ctx.ts.SyntaxKind.DefaultKeyword,
-    )
-    if (defaulted) return "default"
+    if (!exported(ctx.ts, node)) return
+    if (defaulted(ctx.ts, node)) return "default"
     return node.name?.text
   }
   if (ctx.ts.isVariableDeclaration(node)) {
@@ -52,10 +46,7 @@ export function getRouteExportName(ctx: Context, node: ts.Node) {
     if (!ctx.ts.isVariableDeclarationList(varDeclList)) return
     const varStmt = varDeclList.parent
     if (!ctx.ts.isVariableStatement(varStmt)) return
-    const exported = varStmt.modifiers?.find(
-      (m) => m.kind === ctx.ts.SyntaxKind.ExportKeyword,
-    )
-    if (!exported) return
+    if (!exported(ctx.ts, varStmt)) return
     if (!ctx.ts.isIdentifier(node.name)) return
     return node.name.text
   }
@@ -97,7 +88,7 @@ export function getExportNames(
   return exports
 }
 
-function exported(
+export function exported(
   ts: Context["ts"],
   stmt: ts.VariableStatement | ts.FunctionDeclaration,
 ) {

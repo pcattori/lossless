@@ -6,6 +6,11 @@ import { getRoutes, routeExports } from "../routes"
 import * as AST from "./ast"
 
 export function decorateLanguageService(ctx: Context) {
+  function isRoute(fileName: string) {
+    const route = getRoutes(ctx.config).get(fileName)
+    return route
+  }
+
   const ls = ctx.languageService
 
   // completions
@@ -13,49 +18,57 @@ export function decorateLanguageService(ctx: Context) {
 
   const { getCompletionsAtPosition } = ls
   ls.getCompletionsAtPosition = (...args) =>
-    Autotype.getCompletionsAtPosition(ctx)(...args) ??
-    getCompletionsAtPosition(...args)
+    isRoute(args[0])
+      ? Autotype.getCompletionsAtPosition(ctx)(...args)
+      : getCompletionsAtPosition(...args)
 
   const { getCompletionEntryDetails } = ls
   ls.getCompletionEntryDetails = (...args) =>
-    Autotype.getCompletionEntryDetails(ctx)(...args) ??
-    getCompletionEntryDetails(...args)
+    isRoute(args[0])
+      ? Autotype.getCompletionEntryDetails(ctx)(...args)
+      : getCompletionEntryDetails(...args)
 
   const { getSignatureHelpItems } = ls
   ls.getSignatureHelpItems = (...args) =>
-    Autotype.getSignatureHelpItems(ctx)(...args) ??
-    getSignatureHelpItems(...args)
+    isRoute(args[0])
+      ? Autotype.getSignatureHelpItems(ctx)(...args)
+      : getSignatureHelpItems(...args)
 
   // definitions
   // --------------------------------------------------------------------------
 
   const { getDefinitionAndBoundSpan } = ls
   ls.getDefinitionAndBoundSpan = (...args) =>
-    Autotype.getDefinitionAndBoundSpan(ctx)(...args) ??
-    getDefinitionAndBoundSpan(...args)
+    isRoute(args[0])
+      ? Autotype.getDefinitionAndBoundSpan(ctx)(...args)
+      : getDefinitionAndBoundSpan(...args)
 
   const { getTypeDefinitionAtPosition } = ls
   ls.getTypeDefinitionAtPosition = (...args) =>
-    Autotype.getTypeDefinitionAtPosition(ctx)(...args) ??
-    getTypeDefinitionAtPosition(...args)
+    isRoute(args[0])
+      ? Autotype.getTypeDefinitionAtPosition(ctx)(...args)
+      : getTypeDefinitionAtPosition(...args)
 
   // diagnostics
   // --------------------------------------------------------------------------
 
   const { getSyntacticDiagnostics } = ls
   ls.getSyntacticDiagnostics = (...args) =>
-    nonempty(Autotype.getSyntacticDiagnostics(ctx)(...args)) ??
-    getSyntacticDiagnostics(...args)
+    isRoute(args[0])
+      ? Autotype.getSyntacticDiagnostics(ctx)(...args)
+      : getSyntacticDiagnostics(...args)
 
   const { getSemanticDiagnostics } = ls
   ls.getSemanticDiagnostics = (...args) =>
-    nonempty(Autotype.getSemanticDiagnostics(ctx)(...args)) ??
-    getSemanticDiagnostics(...args)
+    isRoute(args[0])
+      ? Autotype.getSemanticDiagnostics(ctx)(...args)
+      : getSemanticDiagnostics(...args)
 
   const { getSuggestionDiagnostics } = ls
   ls.getSuggestionDiagnostics = (...args) =>
-    nonempty(Autotype.getSuggestionDiagnostics(ctx)(...args)) ??
-    getSuggestionDiagnostics(...args)
+    isRoute(args[0])
+      ? Autotype.getSuggestionDiagnostics(ctx)(...args)
+      : getSuggestionDiagnostics(...args)
 
   // diagnostics
   // --------------------------------------------------------------------------
@@ -91,12 +104,7 @@ export function decorateLanguageService(ctx: Context) {
 
   const { provideInlayHints } = ls
   ls.provideInlayHints = (...args) =>
-    nonempty(Autotype.provideInlayHints(ctx)(...args)) ??
-    provideInlayHints(...args)
-}
-
-/** Converts empty arrays to `undefined` for easier interop with `??` */
-function nonempty<T extends any[]>(arg: T): T | undefined {
-  if (arg.length === 0) return
-  return arg
+    isRoute(args[0])
+      ? Autotype.provideInlayHints(ctx)(...args)
+      : provideInlayHints(...args)
 }

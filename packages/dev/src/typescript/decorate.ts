@@ -50,7 +50,9 @@ export function decorateLanguageService(ctx: Context) {
         routeExport
           .completions(ctx)
           .filter(() => !exports.has(key))
-          .filter((completion) => fzf(normalizedLine, completion.name))
+          .filter((completion) =>
+            fzf(normalizedLine, completion?.insertText ?? completion.name),
+          )
           .map((completion) => ({
             ...completion,
             replacementSpan: { start: lineStart, length: position - lineStart },

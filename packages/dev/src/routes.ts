@@ -44,10 +44,14 @@ function createFunctionCompletion(
   name: string,
 ): ts.CompletionEntry {
   return {
-    name: `export function ${name}() {}`,
+    name,
+    insertText: `export function ${name}() {}`,
     kind: ctx.ts.ScriptElementKind.functionElement,
     kindModifiers: ctx.ts.ScriptElementKindModifier.exportedModifier,
     sortText: "0",
+    labelDetails: {
+      description: "React Router",
+    },
   }
 }
 

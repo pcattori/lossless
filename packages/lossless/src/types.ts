@@ -62,8 +62,10 @@ type Serialize<T> =
 // prettier-ignore
 type DataFrom<T> =
   IsAny<T> extends true ? undefined :
-  T extends Fn ? Serialize<Awaited<ReturnType<T>>> :
+  T extends Fn ? Serialize<VoidToUndefined<Awaited<ReturnType<T>>>> :
   undefined
+
+type VoidToUndefined<T> = Equal<T, void> extends true ? undefined : T
 
 // prettier-ignore
 type LoaderData<

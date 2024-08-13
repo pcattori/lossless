@@ -63,7 +63,7 @@ export function decorateLanguageService(ctx: Context) {
           kindModifiers: ctx.ts.ScriptElementKindModifier.exportedModifier,
           sortText: "0",
           labelDetails: {
-            description: "React Router",
+            description: "React Router Export",
           },
           data: {
             exportName: key, // TS needs this

@@ -77,17 +77,25 @@ export function decorateLanguageService(ctx: Context) {
         }
       })
       .filter((x) => x !== null)
-    if (routeExportCompletions.length > 0) {
-      return {
-        isGlobalCompletion: false,
-        isMemberCompletion: false,
-        isNewIdentifierLocation: false,
-        isIncomplete: true,
-        entries: routeExportCompletions,
-      }
+
+    if (!completions) {
+      return routeExportCompletions.length > 0
+        ? {
+            isGlobalCompletion: false,
+            isMemberCompletion: false,
+            isNewIdentifierLocation: false,
+            isIncomplete: true,
+            entries: routeExportCompletions,
+          }
+        : undefined
     }
 
-    return completions
+    return routeExportCompletions.length > 0
+      ? {
+          ...completions,
+          entries: [...routeExportCompletions, ...completions.entries],
+        }
+      : completions
   }
 
   const { getCompletionEntryDetails } = ls

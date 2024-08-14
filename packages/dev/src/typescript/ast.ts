@@ -1,6 +1,10 @@
 import type ts from "typescript/lib/tsserverlibrary"
 import type { Context } from "./context"
 
+export function generateUniqueIdentifier(): string {
+  return "_" + crypto.randomUUID().replace(/-/g, "_")
+}
+
 export function findNodeAtPosition(
   node: ts.Node,
   pos: number,

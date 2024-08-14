@@ -169,6 +169,7 @@ function autotypeRoute(ctx: Context, filepath: string, code: string) {
       ...annotateDefaultExportExpression(ctx, stmt, typesSource),
       ...annotateNamedExportFunctionDeclaration(ctx, stmt, typesSource),
       ...annotateNamedExportVariableStatement(ctx, stmt, typesSource),
+      ...annotateExportDeclaration(ctx, stmt, typesSource),
     ]),
   ]
   return new AutotypedRoute(code, splices)
@@ -312,6 +313,48 @@ function annotateFunction(
         }
       : null,
   ].filter((x) => x !== null)
+}
+
+function annotateExportDeclaration(
+  ctx: Context,
+  stmt: ts.Statement,
+  typesSource: string,
+): Splice[] {
+  if (!ctx.ts.isExportDeclaration(stmt)) return []
+
+  const source = stmt.moduleSpecifier
+  if (source && !ctx.ts.isStringLiteral(source)) return []
+
+  const exports = stmt.exportClause
+  if (!exports) return []
+  if (!ctx.ts.isNamedExports(exports)) return []
+
+  return exports.elements
+    .map((specifier) => {
+      const name = specifier.name.text
+      const routeExport = routeExports[name]
+      if (!routeExport) return
+
+      const localName = specifier.propertyName?.text ?? name
+      const unique = AST.generateUniqueIdentifier()
+      const satisfiesType = `import("${typesSource}").Route["${name}"]`
+
+      const splice: Splice = {
+        index: stmt.getStart(),
+        content: source
+          ? [
+              `import { ${localName} as ${unique} } from "${source.text}"`,
+              `;(${unique}) satisfies ${satisfiesType}`,
+            ].join("\n") + "\n"
+          : `;(${localName}) satisfies ${satisfiesType}\n`,
+        remapDiagnostics: {
+          start: specifier.name.getStart(),
+          length: specifier.name.getWidth(),
+        },
+      }
+      return splice
+    })
+    .filter((x) => x !== undefined)
 }
 
 export class AutotypedRoute {

@@ -151,10 +151,37 @@ export function decorateLanguageService(ctx: Context) {
       : getSyntacticDiagnostics(...args)
 
   const { getSemanticDiagnostics } = ls
-  ls.getSemanticDiagnostics = (...args) =>
-    getRoute(args[0])
-      ? Autotype.getSemanticDiagnostics(ctx)(...args)
-      : getSemanticDiagnostics(...args)
+  ls.getSemanticDiagnostics = (fileName) => {
+    if (!getRoute(fileName)) return getSemanticDiagnostics(fileName)
+
+    const diagnostics = Autotype.getSemanticDiagnostics(ctx)(fileName)
+
+    const sourceFile = ls.getProgram()?.getSourceFile(fileName)
+    if (!sourceFile) return diagnostics
+
+    const exportStarDiagnostics: ts.Diagnostic[] = sourceFile.statements
+      .map((stmt) => {
+        if (!ctx.ts.isExportDeclaration(stmt)) return
+        if (
+          stmt.exportClause === undefined || // export * as stuff from "..."
+          ctx.ts.isNamespaceExportDeclaration(stmt) // export * as stuff from "..."
+        ) {
+          const diagnostic: ts.Diagnostic = {
+            file: sourceFile,
+            category: ctx.ts.DiagnosticCategory.Warning,
+            start: stmt.getStart(),
+            length: stmt.getWidth(),
+            messageText:
+              "React Router cannot typecheck route exports from `*` exports",
+            code: 100,
+          }
+          return diagnostic
+        }
+      })
+      .filter((x) => x !== undefined)
+
+    return [...exportStarDiagnostics, ...diagnostics]
+  }
 
   const { getSuggestionDiagnostics } = ls
   ls.getSuggestionDiagnostics = (...args) =>

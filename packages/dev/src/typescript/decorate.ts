@@ -6,7 +6,7 @@ import { getRoutes, routeExports } from "../routes"
 import * as AST from "./ast"
 
 export function decorateLanguageService(ctx: Context) {
-  function isRoute(fileName: string) {
+  function getRoute(fileName: string) {
     const route = getRoutes(ctx.config).get(fileName)
     return route
   }
@@ -18,11 +18,15 @@ export function decorateLanguageService(ctx: Context) {
 
   const { getCompletionsAtPosition } = ls
   ls.getCompletionsAtPosition = (fileName, position, ...rest) => {
-    const completions = isRoute(fileName)
-      ? Autotype.getCompletionsAtPosition(ctx)(fileName, position, ...rest)
-      : getCompletionsAtPosition(fileName, position, ...rest)
+    if (!getRoute(fileName)) {
+      return getCompletionsAtPosition(fileName, position, ...rest)
+    }
 
-    if (!isRoute(fileName)) return completions
+    const completions = Autotype.getCompletionsAtPosition(ctx)(
+      fileName,
+      position,
+      ...rest,
+    )
 
     const sourceFile = ctx.languageService.getProgram()?.getSourceFile(fileName)
     if (!sourceFile) return completions
@@ -111,14 +115,14 @@ export function decorateLanguageService(ctx: Context) {
         displayParts: [],
       }
     }
-    return isRoute(args[0])
+    return getRoute(args[0])
       ? Autotype.getCompletionEntryDetails(ctx)(...args)
       : getCompletionEntryDetails(...args)
   }
 
   const { getSignatureHelpItems } = ls
   ls.getSignatureHelpItems = (...args) =>
-    isRoute(args[0])
+    getRoute(args[0])
       ? Autotype.getSignatureHelpItems(ctx)(...args)
       : getSignatureHelpItems(...args)
 
@@ -127,13 +131,13 @@ export function decorateLanguageService(ctx: Context) {
 
   const { getDefinitionAndBoundSpan } = ls
   ls.getDefinitionAndBoundSpan = (...args) =>
-    isRoute(args[0])
+    getRoute(args[0])
       ? Autotype.getDefinitionAndBoundSpan(ctx)(...args)
       : getDefinitionAndBoundSpan(...args)
 
   const { getTypeDefinitionAtPosition } = ls
   ls.getTypeDefinitionAtPosition = (...args) =>
-    isRoute(args[0])
+    getRoute(args[0])
       ? Autotype.getTypeDefinitionAtPosition(ctx)(...args)
       : getTypeDefinitionAtPosition(...args)
 
@@ -142,19 +146,19 @@ export function decorateLanguageService(ctx: Context) {
 
   const { getSyntacticDiagnostics } = ls
   ls.getSyntacticDiagnostics = (...args) =>
-    isRoute(args[0])
+    getRoute(args[0])
       ? Autotype.getSyntacticDiagnostics(ctx)(...args)
       : getSyntacticDiagnostics(...args)
 
   const { getSemanticDiagnostics } = ls
   ls.getSemanticDiagnostics = (...args) =>
-    isRoute(args[0])
+    getRoute(args[0])
       ? Autotype.getSemanticDiagnostics(ctx)(...args)
       : getSemanticDiagnostics(...args)
 
   const { getSuggestionDiagnostics } = ls
   ls.getSuggestionDiagnostics = (...args) =>
-    isRoute(args[0])
+    getRoute(args[0])
       ? Autotype.getSuggestionDiagnostics(ctx)(...args)
       : getSuggestionDiagnostics(...args)
 
@@ -163,13 +167,13 @@ export function decorateLanguageService(ctx: Context) {
 
   const { getQuickInfoAtPosition } = ls
   ls.getQuickInfoAtPosition = (fileName, position) => {
-    const quickinfo = isRoute(fileName)
+    const route = getRoute(fileName)
+    if (!route) return getQuickInfoAtPosition(fileName, position)
+
+    const quickinfo = getRoute(fileName)
       ? Autotype.getQuickInfoAtPosition(ctx)(fileName, position)
       : getQuickInfoAtPosition(fileName, position)
     if (!quickinfo) return
-
-    const route = getRoutes(ctx.config).get(fileName)
-    if (!route) return quickinfo
 
     const sourceFile = ctx.languageService.getProgram()?.getSourceFile(fileName)
     const node = sourceFile && AST.findNodeAtPosition(sourceFile, position)
@@ -194,7 +198,7 @@ export function decorateLanguageService(ctx: Context) {
 
   const { provideInlayHints } = ls
   ls.provideInlayHints = (...args) =>
-    isRoute(args[0])
+    getRoute(args[0])
       ? Autotype.provideInlayHints(ctx)(...args)
       : provideInlayHints(...args)
 }

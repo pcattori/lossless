@@ -149,6 +149,10 @@ export function getAutotypeLanguageService(ctx: Context) {
 type Splice = {
   index: number
   content: string
+  remapDiagnostics: {
+    start: number
+    length: number
+  }
 }
 
 function autotypeRoute(config: Config, filepath: string, code: string) {
@@ -179,9 +183,14 @@ function annotateDefaultExportFunctionDeclaration(
   if (!ts.isFunctionDeclaration(stmt)) return []
 
   if (!AST.exported(ts, stmt)) return []
-  if (!AST.defaulted(ts, stmt)) return []
 
-  return annotateFunction(stmt, typesSource, "default")
+  const _default = AST.defaulted(ts, stmt)
+  if (!_default) return []
+
+  return annotateFunction(stmt, typesSource, "default", {
+    start: stmt.name?.getStart() ?? _default.getStart(),
+    length: stmt.name?.getWidth() ?? _default.getWidth(),
+  })
 }
 
 function annotateDefaultExportExpression(
@@ -191,7 +200,19 @@ function annotateDefaultExportExpression(
   if (!ts.isExportAssignment(stmt)) return []
   if (stmt.isExportEquals) return []
   if (!ts.isArrowFunction(stmt.expression)) return []
-  return annotateFunction(stmt.expression, typesSource, "default")
+
+  const regex = /^export\s+/
+  const matches = stmt.getText().match(regex)
+  if (!matches) {
+    throw Error(
+      `expected ${regex} at ${stmt.getSourceFile().fileName}:${stmt.getStart()}`,
+    )
+  }
+
+  return annotateFunction(stmt.expression, typesSource, "default", {
+    start: stmt.getStart() + matches[0].length,
+    length: 7,
+  })
 }
 
 function annotateNamedExportFunctionDeclaration(
@@ -202,10 +223,13 @@ function annotateNamedExportFunctionDeclaration(
   if (!AST.exported(ts, stmt)) return []
   if (AST.defaulted(ts, stmt)) return []
 
-  const name = stmt.name?.text
+  const { name } = stmt
   if (!name) return []
 
-  return annotateFunction(stmt, typesSource, name)
+  return annotateFunction(stmt, typesSource, name.text, {
+    start: name.getStart(),
+    length: name.getWidth(),
+  })
 }
 
 function annotateNamedExportVariableStatement(
@@ -222,8 +246,11 @@ function annotateNamedExportVariableStatement(
       ts.isFunctionExpression(decl.initializer) ||
       ts.isArrowFunction(decl.initializer)
     ) {
-      const name = decl.name.text
-      return annotateFunction(decl.initializer, typesSource, name)
+      const { name } = decl
+      return annotateFunction(decl.initializer, typesSource, name.text, {
+        start: name.getStart(),
+        length: name.getWidth(),
+      })
     }
     return []
   })
@@ -233,6 +260,10 @@ function annotateFunction(
   fn: ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression,
   typesSource: string,
   name: string,
+  remapDiagnostics: {
+    start: number
+    length: number
+  },
 ): Splice[] {
   const param = fn.parameters[0]
 
@@ -247,12 +278,14 @@ function annotateFunction(
       ? {
           index: param.getEnd(),
           content: `: import("${typesSource}").Args["${name}"]`,
+          remapDiagnostics,
         }
       : null,
     returnType && returnTypeIndex && fn.type === undefined
       ? {
           index: returnTypeIndex,
           content: `: ${returnType} `,
+          remapDiagnostics,
         }
       : null,
   ].filter((x) => x !== null)
@@ -294,22 +327,22 @@ export class AutotypedRoute {
 
   toOriginalIndex(splicedIndex: number): {
     index: number
-    spliced: boolean
+    remapDiagnostics?: { start: number; length: number }
   } {
     let spliceOffset = 0
-    for (let { index, content } of this._splices) {
+    for (let { index, content, remapDiagnostics } of this._splices) {
       // before this splice
       if (splicedIndex < index + spliceOffset) break
 
       // within this splice
       if (splicedIndex < index + spliceOffset + content.length) {
-        return { index, spliced: true }
+        return { index, remapDiagnostics }
       }
 
       // after this splice
       spliceOffset += content.length
     }
-    return { index: Math.max(0, splicedIndex - spliceOffset), spliced: false }
+    return { index: Math.max(0, splicedIndex - spliceOffset) }
   }
 }
 

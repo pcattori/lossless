@@ -56,16 +56,11 @@ const remapSpans =
   (diagnostic: T): T => {
     if (!diagnostic.start) return diagnostic
 
-    const { index, spliced } = route.toOriginalIndex(diagnostic.start)
-    let length = diagnostic.length
-    if (spliced) {
-      // avoid diagnostics in splices from overflowing onto unrelated code
-      length = 1
-    }
+    const { index, remapDiagnostics } = route.toOriginalIndex(diagnostic.start)
     return {
       ...diagnostic,
-      start: index,
-      length,
+      start: remapDiagnostics?.start ?? index,
+      length: remapDiagnostics?.length ?? diagnostic.length,
       file: sourceFile,
     }
   }

@@ -342,11 +342,9 @@ function annotateExportDeclaration(
       const splice: Splice = {
         index: stmt.getStart(),
         content: source
-          ? [
-              `import { ${localName} as ${unique} } from "${source.text}"`,
-              `;(${unique}) satisfies ${satisfiesType}`,
-            ].join("\n") + "\n"
-          : `;(${localName}) satisfies ${satisfiesType}\n`,
+          ? `import { ${localName} as ${unique} } from "${source.text}"\n` +
+            `${unique} satisfies ${satisfiesType}\n`
+          : `${localName} satisfies ${satisfiesType}\n`,
         remapDiagnostics: {
           start: specifier.name.getStart(),
           length: specifier.name.getWidth(),

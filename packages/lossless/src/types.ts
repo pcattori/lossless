@@ -1,6 +1,6 @@
-import type { LinkDescriptor } from "./links"
+import type { ReactNode } from "react"
 
-export type { LinkDescriptor }
+import type { LinkDescriptor } from "./links"
 
 // prettier-ignore
 type Equal<X, Y> =
@@ -106,7 +106,7 @@ type ActionArgs<Params> = {
   params: Params
 }
 
-export type RouteArgs<
+export type Route<
   Params,
   RouteModule extends {
     serverLoader?: Fn
@@ -117,20 +117,24 @@ export type RouteArgs<
   },
 > = {
   // TODO: meta, handle, shouldRevalidate
-  links: { params: Params }
-  serverLoader: LoaderArgs<Params>
-  clientLoader: LoaderArgs<Params> & {
-    serverLoader: () => Promise<DataFrom<RouteModule["serverLoader"]>>
-  }
+  links: (args: { params: Params }) => LinkDescriptor[]
+  serverLoader: (args: LoaderArgs<Params>) => unknown
+  clientLoader: (
+    args: LoaderArgs<Params> & {
+      serverLoader: () => Promise<DataFrom<RouteModule["serverLoader"]>>
+    },
+  ) => unknown
 
   // TODO: clientLoader.hydrate
-  HydrateFallback: { params: Params }
+  HydrateFallback: (args: { params: Params }) => ReactNode
 
-  serverAction: ActionArgs<Params>
-  clientAction: LoaderArgs<Params> & {
-    serverLoader: () => Promise<DataFrom<RouteModule["serverAction"]>>
-  }
-  default: {
+  serverAction: (args: ActionArgs<Params>) => unknown
+  clientAction: (
+    args: LoaderArgs<Params> & {
+      serverLoader: () => Promise<DataFrom<RouteModule["serverAction"]>>
+    },
+  ) => unknown
+  default: (args: {
     params: Params
     loaderData: LoaderData<
       DataFrom<RouteModule["serverLoader"]>,
@@ -142,8 +146,8 @@ export type RouteArgs<
       DataFrom<RouteModule["serverAction"]>,
       DataFrom<RouteModule["clientAction"]>
     >
-  }
-  ErrorBoundary: {
+  }) => ReactNode
+  ErrorBoundary: (args: {
     params: Params
     error: unknown
     loaderData?: LoaderData<
@@ -156,5 +160,5 @@ export type RouteArgs<
       DataFrom<RouteModule["serverAction"]>,
       DataFrom<RouteModule["clientAction"]>
     >
-  }
+  }) => ReactNode
 }

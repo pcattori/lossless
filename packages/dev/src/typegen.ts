@@ -69,7 +69,7 @@ function typegen(route: Route) {
     `import type * as Lossless from "lossless"`,
     "",
     `type Params = ${paramsType}`,
-    `export type Args = Lossless.RouteArgs<Params, typeof import("${routePath}")>`,
+    `export type Route = Lossless.Route<Params, typeof import("${routePath}")>`,
   ].join("\n")
 }
 

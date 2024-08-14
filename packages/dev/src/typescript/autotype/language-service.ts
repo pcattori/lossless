@@ -294,20 +294,20 @@ function annotateFunction(
     ? fn.equalsGreaterThanToken.getStart()
     : fn.body?.getStart()
 
-  const returnType = routeExports[name]?.returnType
+  const annotateReturnType = routeExports[name]?.annotateReturnType
 
   return [
     param && param.type === undefined
       ? {
           index: param.getEnd(),
-          content: `: import("${typesSource}").Args["${name}"]`,
+          content: `: Parameters<import("${typesSource}").Route["${name}"]>[0]`,
           remapDiagnostics,
         }
       : null,
-    returnType && returnTypeIndex && fn.type === undefined
+    returnTypeIndex && annotateReturnType && fn.type === undefined
       ? {
           index: returnTypeIndex,
-          content: `: ${returnType} `,
+          content: `: ReturnType<import("${typesSource}").Route["${name}"]> `,
           remapDiagnostics,
         }
       : null,

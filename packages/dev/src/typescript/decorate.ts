@@ -180,7 +180,46 @@ export function decorateLanguageService(ctx: Context) {
       })
       .filter((x) => x !== undefined)
 
-    return [...exportStarDiagnostics, ...diagnostics]
+    const hmrNamedFunctionsDiagnostics: ts.Diagnostic[] = sourceFile.statements
+      .map((stmt) => {
+        if (ctx.ts.isFunctionDeclaration(stmt)) {
+          // export default function ...
+          if (!AST.exported(ctx.ts, stmt)) return
+          if (!AST.defaulted(ctx.ts, stmt)) return
+
+          if (!stmt.name) {
+            return {
+              file: sourceFile,
+              category: ctx.ts.DiagnosticCategory.Warning,
+              start: stmt.getStart(),
+              length: stmt.getWidth(),
+              messageText:
+                "For HMR to work, React Router default export must be named\n\nhttps://remix.run/docs/en/main/discussion/hot-module-replacement#named-function-components",
+              code: 101,
+            }
+          }
+        }
+        if (ctx.ts.isExportAssignment(stmt)) {
+          if (stmt.isExportEquals) return
+          // export default expr
+          return {
+            file: sourceFile,
+            category: ctx.ts.DiagnosticCategory.Warning,
+            start: stmt.getStart(),
+            length: stmt.getWidth(),
+            messageText:
+              "For HMR to work, React Router default export must be named\n\nhttps://remix.run/docs/en/main/discussion/hot-module-replacement#named-function-components",
+            code: 101,
+          }
+        }
+      })
+      .filter((x) => x !== undefined)
+
+    return [
+      ...hmrNamedFunctionsDiagnostics,
+      ...exportStarDiagnostics,
+      ...diagnostics,
+    ]
   }
 
   const { getSuggestionDiagnostics } = ls

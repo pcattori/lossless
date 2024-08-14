@@ -187,9 +187,13 @@ function annotateDefaultExportFunctionDeclaration(
   const _default = AST.defaulted(ts, stmt)
   if (!_default) return []
 
-  return annotateFunction(stmt, typesSource, "default", {
-    start: stmt.name?.getStart() ?? _default.getStart(),
-    length: stmt.name?.getWidth() ?? _default.getWidth(),
+  return annotateFunction(stmt, {
+    typesSource,
+    name: "default",
+    remapDiagnostics: {
+      start: stmt.name?.getStart() ?? _default.getStart(),
+      length: stmt.name?.getWidth() ?? _default.getWidth(),
+    },
   })
 }
 
@@ -209,9 +213,13 @@ function annotateDefaultExportExpression(
     )
   }
 
-  return annotateFunction(stmt.expression, typesSource, "default", {
-    start: stmt.getStart() + matches[0].length,
-    length: 7,
+  return annotateFunction(stmt.expression, {
+    typesSource,
+    name: "default",
+    remapDiagnostics: {
+      start: stmt.getStart() + matches[0].length,
+      length: 7,
+    },
   })
 }
 
@@ -223,12 +231,15 @@ function annotateNamedExportFunctionDeclaration(
   if (!AST.exported(ts, stmt)) return []
   if (AST.defaulted(ts, stmt)) return []
 
-  const { name } = stmt
-  if (!name) return []
+  if (!stmt.name) return []
 
-  return annotateFunction(stmt, typesSource, name.text, {
-    start: name.getStart(),
-    length: name.getWidth(),
+  return annotateFunction(stmt, {
+    typesSource,
+    name: stmt.name.text,
+    remapDiagnostics: {
+      start: stmt.name.getStart(),
+      length: stmt.name.getWidth(),
+    },
   })
 }
 
@@ -246,10 +257,13 @@ function annotateNamedExportVariableStatement(
       ts.isFunctionExpression(decl.initializer) ||
       ts.isArrowFunction(decl.initializer)
     ) {
-      const { name } = decl
-      return annotateFunction(decl.initializer, typesSource, name.text, {
-        start: name.getStart(),
-        length: name.getWidth(),
+      return annotateFunction(decl.initializer, {
+        typesSource,
+        name: decl.name.text,
+        remapDiagnostics: {
+          start: decl.name.getStart(),
+          length: decl.name.getWidth(),
+        },
       })
     }
     return []
@@ -258,11 +272,17 @@ function annotateNamedExportVariableStatement(
 
 function annotateFunction(
   fn: ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression,
-  typesSource: string,
-  name: string,
-  remapDiagnostics: {
-    start: number
-    length: number
+  {
+    typesSource,
+    name,
+    remapDiagnostics,
+  }: {
+    typesSource: string
+    name: string
+    remapDiagnostics: {
+      start: number
+      length: number
+    }
   },
 ): Splice[] {
   const param = fn.parameters[0]

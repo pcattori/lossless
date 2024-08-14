@@ -1,10 +1,9 @@
 // Adapted from https://github.com/sveltejs/language-tools/blob/master/packages/typescript-plugin/src/language-service/sveltekit.ts
 
-import ts from "typescript"
+import type ts from "typescript/lib/tsserverlibrary"
 
 import * as path from "node:path"
 
-import type { Config } from "../../config"
 import { getRoutes, routeExports } from "../../routes"
 import { getTypesPath } from "../../typegen"
 import * as AST from "../ast"
@@ -105,9 +104,8 @@ export function getAutotypeLanguageService(ctx: Context) {
       if (!sourceFile) return
 
       const { text: code } = sourceFile
-      const autotyped = autotypeRoute(ctx.config, fileName, code)
-      ctx.logger?.info(`WOW\n\n${autotyped.code()}\n\n`)
-      const snapshot = ts.ScriptSnapshot.fromString(autotyped.code())
+      const autotyped = autotypeRoute(ctx, fileName, code)
+      const snapshot = ctx.ts.ScriptSnapshot.fromString(autotyped.code())
       snapshot.getChangeRange = (_) => undefined
 
       this.routes[fileName] = {
@@ -141,7 +139,7 @@ export function getAutotypeLanguageService(ctx: Context) {
     return route
   }
 
-  const languageService = ts.createLanguageService(autotypeHost)
+  const languageService = ctx.ts.createLanguageService(autotypeHost)
   CACHED = { ...languageService, getRoute }
   return CACHED
 }
@@ -155,39 +153,40 @@ type Splice = {
   }
 }
 
-function autotypeRoute(config: Config, filepath: string, code: string) {
-  const sourceFile = ts.createSourceFile(
+function autotypeRoute(ctx: Context, filepath: string, code: string) {
+  const sourceFile = ctx.ts.createSourceFile(
     filepath,
     code,
-    ts.ScriptTarget.Latest,
+    ctx.ts.ScriptTarget.Latest,
     true,
   )
-  const route = { file: path.relative(config.appDirectory, filepath) }
-  const typesSource = "./" + path.parse(getTypesPath(config, route)).name
+  const route = { file: path.relative(ctx.config.appDirectory, filepath) }
+  const typesSource = "./" + path.parse(getTypesPath(ctx.config, route)).name
 
   const splices: Splice[] = [
     ...sourceFile.statements.flatMap((stmt) => [
-      ...annotateDefaultExportFunctionDeclaration(stmt, typesSource),
-      ...annotateDefaultExportExpression(stmt, typesSource),
-      ...annotateNamedExportFunctionDeclaration(stmt, typesSource),
-      ...annotateNamedExportVariableStatement(stmt, typesSource),
+      ...annotateDefaultExportFunctionDeclaration(ctx, stmt, typesSource),
+      ...annotateDefaultExportExpression(ctx, stmt, typesSource),
+      ...annotateNamedExportFunctionDeclaration(ctx, stmt, typesSource),
+      ...annotateNamedExportVariableStatement(ctx, stmt, typesSource),
     ]),
   ]
   return new AutotypedRoute(code, splices)
 }
 
 function annotateDefaultExportFunctionDeclaration(
+  ctx: Context,
   stmt: ts.Statement,
   typesSource: string,
 ): Splice[] {
-  if (!ts.isFunctionDeclaration(stmt)) return []
+  if (!ctx.ts.isFunctionDeclaration(stmt)) return []
 
-  if (!AST.exported(ts, stmt)) return []
+  if (!AST.exported(ctx.ts, stmt)) return []
 
-  const _default = AST.defaulted(ts, stmt)
+  const _default = AST.defaulted(ctx.ts, stmt)
   if (!_default) return []
 
-  return annotateFunction(stmt, {
+  return annotateFunction(ctx, stmt, {
     typesSource,
     name: "default",
     remapDiagnostics: {
@@ -198,12 +197,13 @@ function annotateDefaultExportFunctionDeclaration(
 }
 
 function annotateDefaultExportExpression(
+  ctx: Context,
   stmt: ts.Statement,
   typesSource: string,
 ): Splice[] {
-  if (!ts.isExportAssignment(stmt)) return []
+  if (!ctx.ts.isExportAssignment(stmt)) return []
   if (stmt.isExportEquals) return []
-  if (!ts.isArrowFunction(stmt.expression)) return []
+  if (!ctx.ts.isArrowFunction(stmt.expression)) return []
 
   const regex = /^export\s+/
   const matches = stmt.getText().match(regex)
@@ -213,7 +213,7 @@ function annotateDefaultExportExpression(
     )
   }
 
-  return annotateFunction(stmt.expression, {
+  return annotateFunction(ctx, stmt.expression, {
     typesSource,
     name: "default",
     remapDiagnostics: {
@@ -224,16 +224,17 @@ function annotateDefaultExportExpression(
 }
 
 function annotateNamedExportFunctionDeclaration(
+  ctx: Context,
   stmt: ts.Statement,
   typesSource: string,
 ): Splice[] {
-  if (!ts.isFunctionDeclaration(stmt)) return []
-  if (!AST.exported(ts, stmt)) return []
-  if (AST.defaulted(ts, stmt)) return []
+  if (!ctx.ts.isFunctionDeclaration(stmt)) return []
+  if (!AST.exported(ctx.ts, stmt)) return []
+  if (AST.defaulted(ctx.ts, stmt)) return []
 
   if (!stmt.name) return []
 
-  return annotateFunction(stmt, {
+  return annotateFunction(ctx, stmt, {
     typesSource,
     name: stmt.name.text,
     remapDiagnostics: {
@@ -244,20 +245,21 @@ function annotateNamedExportFunctionDeclaration(
 }
 
 function annotateNamedExportVariableStatement(
+  ctx: Context,
   stmt: ts.Statement,
   typesSource: string,
 ): Splice[] {
-  if (!ts.isVariableStatement(stmt)) return []
-  if (!AST.exported(ts, stmt)) return []
+  if (!ctx.ts.isVariableStatement(stmt)) return []
+  if (!AST.exported(ctx.ts, stmt)) return []
 
   return stmt.declarationList.declarations.flatMap((decl) => {
-    if (!ts.isIdentifier(decl.name)) return []
+    if (!ctx.ts.isIdentifier(decl.name)) return []
     if (decl.initializer === undefined) return []
     if (
-      ts.isFunctionExpression(decl.initializer) ||
-      ts.isArrowFunction(decl.initializer)
+      ctx.ts.isFunctionExpression(decl.initializer) ||
+      ctx.ts.isArrowFunction(decl.initializer)
     ) {
-      return annotateFunction(decl.initializer, {
+      return annotateFunction(ctx, decl.initializer, {
         typesSource,
         name: decl.name.text,
         remapDiagnostics: {
@@ -271,6 +273,7 @@ function annotateNamedExportVariableStatement(
 }
 
 function annotateFunction(
+  ctx: Context,
   fn: ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression,
   {
     typesSource,
@@ -287,7 +290,7 @@ function annotateFunction(
 ): Splice[] {
   const param = fn.parameters[0]
 
-  const returnTypeIndex = ts.isArrowFunction(fn)
+  const returnTypeIndex = ctx.ts.isArrowFunction(fn)
     ? fn.equalsGreaterThanToken.getStart()
     : fn.body?.getStart()
 

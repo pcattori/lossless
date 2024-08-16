@@ -37,7 +37,7 @@ type Serialize<T> =
   T extends Serializable ? T :
 
   // ...then don't allow functions to be serialized...
-  T extends (...args: any[]) => unknown ? never :
+  T extends (...args: any[]) => unknown ? undefined :
 
   // ...lastly handle inner types for all container types allowed by `turbo-stream`
 
@@ -55,9 +55,9 @@ type Serialize<T> =
   T extends readonly unknown[] ? readonly Serialize<T[number]>[] :
 
   // Record
-  T extends Record<any, any> ? {[K in keyof T as [Serialize<T[K]>] extends [never] ? never : K]: Serialize<T[K]>} :
+  T extends Record<any, any> ? {[K in keyof T]: Serialize<T[K]>} :
 
-  never
+  undefined
 
 // prettier-ignore
 type DataFrom<T> =
